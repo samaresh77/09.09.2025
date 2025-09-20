@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Proctoring System</title>
+    <link rel="stylesheet" href="./static/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+    
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>AI Proctoring System</h1>
+            <p class="subtitle">Monitor candidate focus and detect unauthorized items during online interviews</p>
+        </header>
+        
+        <div class="main-content">
+            <div class="left-column">
+                <div class="card">
+                    <h2 class="card-title">Interview Screen</h2>
+                    
+                    <div class="video-container">
+                        <video id="video" autoplay playsinline></video>
+                        <div class="overlay" id="overlay"></div>
+                    </div>
+                    
+                    <div class="controls">
+                        <button id="startBtn" class="btn-primary">Start Proctoring</button>
+                        <button id="stopBtn" class="btn-danger" disabled>Stop</button>
+                        <button id="reportBtn" class="btn-success">Generate Report</button>
+                    </div>
+                    
+                    <div class="status-indicators">
+                        <div class="status-item">
+                            <div class="status-dot" id="faceStatus"></div>
+                            <span>Face Detection</span>
+                        </div>
+                        <div class="status-item">
+                            <div class="status-dot" id="gazeStatus"></div>
+                            <span>Candidate Focus</span>
+                        </div>
+                        <div class="status-item">
+                            <div class="status-dot" id="objectStatus"></div>
+                            <span>Object Detection</span>
+                        </div>
+                    </div>
+                    
+                    <div class="candidate-info">
+                        <div class="info-group">
+                            <div class="info-label">Candidate Name</div>
+                            <input type="text" id="candidateName" placeholder="Enter candidate name">
+                        </div>
+                        <div class="info-group">
+                            <div class="info-label">Interview ID</div>
+                            <div class="info-value" id="interviewId">INT-${new Date().getTime()}</div>
+                        </div>
+                        <div class="info-group">
+                            <div class="info-label">Interview Duration</div>
+                            <div class="info-value" id="duration">00:00:00</div>
+                        </div>
+                        <div class="info-group">
+                            <div class="info-label">Detection Status</div>
+                            <div class="info-value" id="detectionStatus">Initializing...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="right-column">
+                <div class="card">
+                    <h2 class="card-title">Detection Events</h2>
+                    <div class="events-log" id="eventsLog">
+                        <div class="event-item">
+                            <div class="event-time">00:00:00</div>
+                            <div>System initialized. Waiting for detection to start.</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h2 class="card-title">Proctoring Report</h2>
+                    <div class="report-preview">
+                        <div class="report-item">
+                            <span>Candidate Name:</span>
+                            <span id="reportCandidateName">-</span>
+                        </div>
+                        <div class="report-item">
+                            <span>Interview Duration:</span>
+                            <span id="reportDuration">00:00:00</span>
+                        </div>
+                        <div class="report-item">
+                            <span>Focus Loss Events:</span>
+                            <span id="focusEvents">0</span>
+                        </div>
+                        <div class="report-item">
+                            <span>No Face Detected Events:</span>
+                            <span id="absenceEvents">0</span>
+                        </div>
+                        <div class="report-item">
+                            <span>Unauthorized Items Detected:</span>
+                            <span id="itemEvents">0</span>
+                        </div>
+                        <div class="report-item">
+                            <span>Multiple Faces Detected:</span>
+                            <span id="multipleFaces">0</span>
+                        </div>
+                        <div class="score-display">
+                            <div>Integrity Score</div>
+                            <div class="score-value" id="integrityScore">100</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State variables
+        let isProctoring = false;
+        let stream = null;
+        let faceModel = null;
+        let objectModel = null;
+        let timerInterval = null;
+        let startTime = null;
+        let events = [];
+        
+        // Detection counters
+        let focusLossCount = 0;
+        let absenceCount = 0;
+        let itemDetectionCount = 0;
+        let multipleFacesCount = 0;
+        
+        // Timing variables for detection
+        let lookingAwayStart = null;
+        let noFaceStart = null;
+        
+        // DOM Elements
+        const video = document.getElementById('video');
+        const overlay = document.getElementById('overlay');
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const reportBtn = document.getElementById('reportBtn');
+        const eventsLog = document.getElementById('eventsLog');
+        const durationDisplay = document.getElementById('duration');
+        const detectionStatus = document.getElementById('detectionStatus');
+        const faceStatus = document.getElementById('faceStatus');
+        const gazeStatus = document.getElementById('gazeStatus');
+        const objectStatus = document.getElementById('objectStatus');
+        const candidateNameInput = document.getElementById('candidateName');
+        const interviewIdDisplay = document.getElementById('interviewId');
+        
+        // Report elements
+        const reportCandidateName = document.getElementById('reportCandidateName');
+        const reportDuration = document.getElementById('reportDuration');
+        const focusEvents = document.getElementById('focusEvents');
+        const absenceEvents = document.getElementById('absenceEvents');
+        const itemEvents = document.getElementById('itemEvents');
+        const multipleFacesElement = document.getElementById('multipleFaces');
+        const integrityScore = document.getElementById('integrityScore');
+        
+        // API base URL
+        const API_BASE = window.location.hostname === 'localhost' ? 
+            'http://localhost:3000/api' : '/api';
+        
+        // Initialize models and camera
+        async function init() {
+            try {
+                detectionStatus.textContent = 'Loading AI models...';
+                
+                // Load face detection model
+                faceModel = await blazeface.load();
+                
+                // Load object detection model
+                objectModel = await cocoSsd.load();
+                
+                detectionStatus.textContent = 'Models loaded. Requesting camera...';
+                
+                // Request camera access
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { width: 640, height: 480 } 
+                });
+                video.srcObject = stream;
+                
+                detectionStatus.textContent = 'Camera active. Ready to start.';
+                startBtn.disabled = false;
+                
+            } catch (err) {
+                console.error('Error initializing proctoring:', err);
+                detectionStatus.textContent = `Error: ${err.message}`;
+                logEvent('System Error', err.message, 'danger');
+            }
+        }
+        
+        // Start proctoring
+        async function startProctoring() {
+            if (!stream) return;
+            
+            const candidateName = candidateNameInput.value || 'Unknown Candidate';
+            if (!candidateNameInput.value) {
+                candidateNameInput.value = 'Unknown Candidate';
+            }
+            
+            isProctoring = true;
+            startBtn.disabled = true;
+            stopBtn.disabled = false;
+            startTime = new Date();
+            
+            // Start timer
+            timerInterval = setInterval(updateTimer, 1000);
+            
+            detectionStatus.textContent = 'Proctoring active';
+            logEvent('Proctoring', 'Proctoring started', 'success');
+            
+            // Initialize backend recording
+            try {
+                const response = await fetch(`${API_BASE}/start-interview`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        candidateName: candidateName,
+                        interviewId: interviewIdDisplay.textContent,
+                        startTime: startTime.toISOString()
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to initialize backend recording');
+                }
+            } catch (err) {
+                console.error('Backend initialization error:', err);
+                logEvent('Backend', 'Could not connect to backend server', 'warning');
+            }
+            
+            // Start detection loops
+            detectFaces();
+            detectObjects();
+        }
+        
+        // Stop proctoring
+        async function stopProctoring() {
+            isProctoring = false;
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+            
+            clearInterval(timerInterval);
+            
+            detectionStatus.textContent = 'Proctoring stopped';
+            logEvent('Proctoring', 'Proctoring stopped', 'danger');
+            
+            // Send stop signal to backend
+            try {
+                await fetch(`${API_BASE}/stop-interview`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        interviewId: interviewIdDisplay.textContent,
+                        endTime: new Date().toISOString()
+                    })
+                });
+            } catch (err) {
+                console.error('Backend stop error:', err);
+            }
+        }
+        
+        // Update timer display
+        function updateTimer() {
+            const now = new Date();
+            const elapsed = new Date(now - startTime);
+            const hours = elapsed.getUTCHours().toString().padStart(2, '0');
+            const minutes = elapsed.getUTCMinutes().toString().padStart(2, '0');
+            const seconds = elapsed.getUTCSeconds().toString().padStart(2, '0');
+            
+            durationDisplay.textContent = `${hours}:${minutes}:${seconds}`;
+            reportDuration.textContent = `${hours}:${minutes}:${seconds}`;
+        }
+        
+        // Detect faces and gaze direction
+        async function detectFaces() {
+            if (!isProctoring || !faceModel) return;
+            
+            try {
+                const predictions = await faceModel.estimateFaces(video, false);
+                
+                // Clear previous face boxes
+                clearDetectionBoxes('face');
+                
+                if (predictions.length > 0) {
+                    faceStatus.classList.add('status-active');
+                    
+                    // Check for multiple faces
+                    if (predictions.length > 1) {
+                        if (noFaceStart === null) {
+                            multipleFacesCount++;
+                            logEvent('Multiple Faces', `${predictions.length} faces detected`, 'danger');
+                            saveEventToBackend('multiple_faces', `${predictions.length} faces detected`);
+                            updateReport();
+                        }
+                    }
+                    
+                    // Reset no face timer
+                    if (noFaceStart !== null) {
+                        const absenceDuration = (new Date() - noFaceStart) / 1000;
+                        if (absenceDuration > 10) {
+                            absenceCount++;
+                            logEvent('Absence', `No face detected for ${absenceDuration.toFixed(1)} seconds`, 'danger');
+                            saveEventToBackend('absence', `No face detected for ${absenceDuration.toFixed(1)} seconds`);
+                            updateReport();
+                        }
+                        noFaceStart = null;
+                    }
+                    
+                    // Process each face
+                    for (const prediction of predictions) {
+                        // Draw face bounding box
+                        drawDetectionBox(prediction, 'face', 'Face');
+                        
+                        // Check gaze direction
+                        const landmarks = prediction.landmarks;
+                        const leftEye = landmarks[0];
+                        const rightEye = landmarks[1];
+                        const nose = landmarks[2];
+                        
+                        // Simple gaze estimation (comparing eye positions)
+                        const eyeDistance = Math.abs(leftEye[0] - rightEye[0]);
+                        const leftEyeToNose = Math.abs(leftEye[0] - nose[0]);
+                        const rightEyeToNose = Math.abs(rightEye[0] - nose[0]);
+                        
+                        // If eyes are not centered, candidate might be looking away
+                        const deviation = Math.abs(leftEyeToNose - rightEyeToNose) / eyeDistance;
+                        
+                        if (deviation > 0.2) {
+                            gazeStatus.classList.remove('status-active');
+                            gazeStatus.classList.add('status-warning');
+                            
+                            if (lookingAwayStart === null) {
+                                lookingAwayStart = new Date();
+                            } else {
+                                const lookingAwayDuration = (new Date() - lookingAwayStart) / 1000;
+                                if (lookingAwayDuration > 5) {
+                                    focusLossCount++;
+                                    logEvent('Focus', `Looking away for ${lookingAwayDuration.toFixed(1)} seconds`, 'warning');
+                                    saveEventToBackend('focus_loss', `Looking away for ${lookingAwayDuration.toFixed(1)} seconds`);
+                                    updateReport();
+                                    lookingAwayStart = null;
+                                }
+                            }
+                        } else {
+                            gazeStatus.classList.remove('status-warning');
+                            gazeStatus.classList.add('status-active');
+                            lookingAwayStart = null;
+                        }
+                    }
+                } else {
+                    // No faces detected
+                    faceStatus.classList.remove('status-active');
+                    gazeStatus.classList.remove('status-active');
+                    
+                    if (noFaceStart === null) {
+                        noFaceStart = new Date();
+                    } else {
+                        const noFaceDuration = (new Date() - noFaceStart) / 1000;
+                        if (noFaceDuration > 10) {
+                            faceStatus.classList.add('status-danger');
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error('Error in face detection:', err);
+            }
+            
+            // Continue detection
+            if (isProctoring) {
+                setTimeout(() => detectFaces(), 500);
+            }
+        }
+        
+        // Detect unauthorized objects
+        async function detectObjects() {
+            if (!isProctoring || !objectModel) return;
+            
+            try {
+                const predictions = await objectModel.detect(video);
+                
+                // Clear previous object boxes
+                clearDetectionBoxes('object');
+                
+                let unauthorizedDetected = false;
+                let detectedItems = [];
+                
+                for (const prediction of predictions) {
+                    // Check for unauthorized items
+                    const itemClass = prediction.class.toLowerCase();
+                    if (itemClass.includes('cell phone') || 
+                        itemClass.includes('phone') ||
+                        itemClass.includes('book') || 
+                        itemClass.includes('laptop') || 
+                        itemClass.includes('tv') || 
+                        itemClass.includes('remote') ||
+                        itemClass.includes('keyboard') ||
+                        itemClass.includes('tablet')) {
+                        
+                        unauthorizedDetected = true;
+                        detectedItems.push(prediction.class);
+                        drawDetectionBox(prediction, 'object', prediction.class);
+                    }
+                }
+                
+                if (unauthorizedDetected) {
+                    objectStatus.classList.add('status-danger');
+                    itemDetectionCount++;
+                    const itemsList = detectedItems.join(', ');
+                    logEvent('Unauthorized Item', `Detected: ${itemsList}`, 'danger');
+                    saveEventToBackend('unauthorized_item', `Detected: ${itemsList}`);
+                    updateReport();
+                } else {
+                    objectStatus.classList.remove('status-danger');
+                    objectStatus.classList.add('status-active');
+                }
+            } catch (err) {
+                console.error('Error in object detection:', err);
+            }
+            
+            // Continue detection (less frequent than face detection)
+            if (isProctoring) {
+                setTimeout(() => detectObjects(), 2000);
+            }
+        }
+        
+        // Draw detection bounding boxes
+        function drawDetectionBox(prediction, type, label) {
+            const [x, y, width, height] = type === 'face' ? 
+                [
+                    prediction.topLeft[0], 
+                    prediction.topLeft[1], 
+                    prediction.bottomRight[0] - prediction.topLeft[0],
+                    prediction.bottomRight[1] - prediction.topLeft[1]
+                ] : 
+                [
+                    prediction.bbox[0], 
+                    prediction.bbox[1], 
+                    prediction.bbox[2], 
+                    prediction.bbox[3]
+                ];
+            
+            const box = document.createElement('div');
+            box.className = `detection-box ${type}-box`;
+            box.style.left = `${x}px`;
+            box.style.top = `${y}px`;
+            box.style.width = `${width}px`;
+            box.style.height = `${height}px`;
+            
+            const labelElement = document.createElement('div');
+            labelElement.className = 'detection-label';
+            labelElement.textContent = label;
+            labelElement.style.left = `${x}px`;
+            labelElement.style.top = `${y - 15}px`;
+            
+            overlay.appendChild(box);
+            overlay.appendChild(labelElement);
+        }
+        
+        // Clear detection boxes
+        function clearDetectionBoxes(type) {
+            const boxes = overlay.querySelectorAll(`.${type}-box`);
+            const labels = overlay.querySelectorAll('.detection-label');
+            
+            boxes.forEach(box => box.remove());
+            labels.forEach(label => label.remove());
+        }
+        
+        // Log events
+        function logEvent(type, message, level = '') {
+            const now = new Date();
+            const hours = now.getHours().toString().padStart(2, '0');
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            const seconds = now.getSeconds().toString().padStart(2, '0');
+            const timeString = `${hours}:${minutes}:${seconds}`;
+            
+            const eventItem = document.createElement('div');
+            eventItem.className = `event-item ${level ? 'event-' + level : ''}`;
+            eventItem.innerHTML = `
+                <div class="event-time">${timeString}</div>
+                <div><strong>${type}:</strong> ${message}</div>
+            `;
+            
+            eventsLog.appendChild(eventItem);
+            eventsLog.scrollTop = eventsLog.scrollHeight;
+            
+            // Store event
+            events.push({
+                type,
+                message,
+                level,
+                timestamp: now
+            });
+        }
+        
+        // Save event to backend
+        async function saveEventToBackend(eventType, eventDescription) {
+            try {
+                await fetch(`${API_BASE}/event`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        interviewId: interviewIdDisplay.textContent,
+                        eventType,
+                        eventDescription,
+                        timestamp: new Date().toISOString()
+                    })
+                });
+            } catch (err) {
+                console.error('Failed to save event to backend:', err);
+            }
+        }
+        
+        // Update report
+        function updateReport() {
+            reportCandidateName.textContent = candidateNameInput.value || 'Unknown Candidate';
+            focusEvents.textContent = focusLossCount;
+            absenceEvents.textContent = absenceCount;
+            itemEvents.textContent = itemDetectionCount;
+            multipleFacesElement.textContent = multipleFacesCount;
+            
+            // Calculate integrity score (100 - deductions)
+            let deductions = (focusLossCount * 2) + (absenceCount * 5) + 
+                            (itemDetectionCount * 10) + (multipleFacesCount * 15);
+            let score = Math.max(0, 100 - deductions);
+            
+            integrityScore.textContent = score;
+            
+            // Color code based on score
+            if (score >= 80) {
+                integrityScore.style.color = '#4cc9f0';
+            } else if (score >= 60) {
+                integrityScore.style.color = '#f9c74f';
+            } else {
+                integrityScore.style.color = '#f72585';
+            }
+        }
+        
+        // Generate report
+        async function generateReport() {
+            const candidateName = candidateNameInput.value || 'Unknown Candidate';
+            
+            // In a real implementation, this would generate a PDF/CSV report
+            // For this demo, we'll fetch the report from the backend
+            try {
+                const response = await fetch(`${API_BASE}/report/${interviewIdDisplay.textContent}`);
+                if (response.ok) {
+                    const reportData = await response.json();
+                    
+                    // Display report data
+                    const reportText = `
+                        Candidate: ${candidateName}
+                        Interview ID: ${interviewIdDisplay.textContent}
+                        Duration: ${durationDisplay.textContent}
+                        Focus Loss Events: ${focusLossCount}
+                        Absence Events: ${absenceCount}
+                        Unauthorized Items: ${itemDetectionCount}
+                        Multiple Faces: ${multipleFacesCount}
+                        Integrity Score: ${integrityScore.textContent}
+                        
+                        Full report saved to backend.
+                    `;
+                    
+                    alert('Proctoring Report:\n' + reportText);
+                    logEvent('Report', 'Proctoring report generated', 'success');
+                } else {
+                    throw new Error('Failed to generate report');
+                }
+            } catch (err) {
+                console.error('Report generation error:', err);
+                
+                // Fallback to frontend-only report
+                const reportData = `
+                    Candidate: ${candidateName}
+                    Interview ID: ${interviewIdDisplay.textContent}
+                    Duration: ${durationDisplay.textContent}
+                    Focus Loss Events: ${focusLossCount}
+                    Absence Events: ${absenceCount}
+                    Unauthorized Items: ${itemDetectionCount}
+                    Multiple Faces: ${multipleFacesCount}
+                    Integrity Score: ${integrityScore.textContent}
+                `;
+                
+                alert('Proctoring Report (frontend only):\n' + reportData);
+                logEvent('Report', 'Proctoring report generated (frontend only)', 'success');
+            }
+        }
+        
+        // Event listeners
+        startBtn.addEventListener('click', startProctoring);
+        stopBtn.addEventListener('click', stopProctoring);
+        reportBtn.addEventListener('click', generateReport);
+        
+        // Initialize the application
+        init();
+    </script>
+</body>
+</html>
