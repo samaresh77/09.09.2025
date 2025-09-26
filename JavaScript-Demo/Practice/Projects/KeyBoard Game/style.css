@@ -1,0 +1,14 @@
+
+.project {
+    
+    margin: 0 auto;
+    position: absolute;
+    left: 40%;
+    top: 50%;
+    
+}
+
+.key {
+    font-size: large;
+    font-weight: bold;
+}
