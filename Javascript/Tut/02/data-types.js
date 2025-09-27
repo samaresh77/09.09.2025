@@ -26,6 +26,8 @@ var nullVar = null; // null
 console.log(typeof nullVar); // "object" (this is a known quirk in JavaScript)
 var undefinedVar; // undefined  
 console.log(typeof undefinedVar); // "undefined"
+console.log(isNaN(undefinedVar)); // true
+console.log(Number.isNaN(undefinedVar)); // false
 var undefinedVar2 = undefined; // explicitly undefined
 var nanVar = NaN; // Not a Number
 console.log(typeof nanVar); // "number"
@@ -36,8 +38,7 @@ console.log(Number.isNaN(nanVar)); // true
 var sym1 = Symbol('description'); // Symbol with description
 var sym2 = Symbol(); // Symbol without description  
 var sym3 = Symbol.for('globalSymbol'); // Global symbol
-var sym4 = Symbol.for('globalSymbol'); // Same global symbol
-var sym5 = Symbol('description'); // Different symbol with same description as sym1
+var sym4 = Symbol('description'); // Different symbol with same description as sym1
 
 //Non-primitive (reference copied) (heap memory)
 // Objects

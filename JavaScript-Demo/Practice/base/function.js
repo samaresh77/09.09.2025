@@ -3,11 +3,11 @@
 // }
 // sayName()
 
-// function add(n1,n2){  //parameter
+// function add(n1,n2){  //arguments
 //     return n1+n2
 //     // console.log(n1+n2)
 // }
-// const result = add(3,5) //arguments
+// const result = add(3,5) //parameters
 // console.log("Result :", result)
 
 // function wellcome(user="s"){
