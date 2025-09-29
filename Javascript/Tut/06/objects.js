@@ -45,3 +45,19 @@ console.log(car.price); // Accessing property with special character
 //Object Destructuring
 const { make, model, year } = car;
 console.log(`Destructured Car: ${year} ${make} ${model}`);
+
+
+// Nested Objects
+const student = {
+    name: "John",
+    age: 22,
+    address: {
+        street: "123 Main St",
+        city: "New York",
+        zip: "10001"
+    },
+    getAddress: function() {
+        return `${this.address.street}, ${this.address.city}, ${this.address.zip}`;
+    }
+};
+console.log("Student Address:", student.getAddress());
