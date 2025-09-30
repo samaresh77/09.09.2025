@@ -30,8 +30,8 @@ for (const key in obj) {
 }
 
 // forEach method
-arr.forEach((value, index) => {
-    console.log("Index:", index, "Value:", value);
+arr.forEach((value, index, arr) => {
+    console.log("Index:", index, "Value:", value, "Array:", arr);
 });
 
 // forEach with objects using Object.entries()
