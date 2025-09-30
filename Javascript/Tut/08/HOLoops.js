@@ -24,3 +24,19 @@ for (const index in arr) {
     console.log("Index:", index, "Value:", arr[index]);
 }
 
+// for in loop for objects
+for (const key in obj) {
+    console.log("Key:", key, "Value:", obj[key]);
+}
+
+// forEach method
+arr.forEach((value, index) => {
+    console.log("Index:", index, "Value:", value);
+});
+
+// forEach with objects using Object.entries()
+Object.entries(obj).forEach(([key, value]) => {
+    console.log("Key:", key, "Value:", value);
+});
+
+
