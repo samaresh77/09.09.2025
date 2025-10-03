@@ -1,74 +1,55 @@
 const fs = require('fs');
 
-// Reading a file
-fs.readFile('example.txt', 'utf8', (err, data) => {
-    if (err) {
-        console.error('Error reading file:', err);
-        return;
-    }
-    console.log('File content:', data);
+// Synchronous file write
+fs.writeFileSync("./test.txt", "This is a test file.");
+
+//Asynchronous file write
+fs.writeFile("./test2.txt", "This is another test file.", (err) => {
+    if (err) throw err;
+    // console.log("File created");
 });
 
-// Writing to a file
-const content = 'This is some example content.';
-fs.writeFile('output.txt', content, (err) => {
-    if (err) {
-        console.error('Error writing file:', err);
-        return;
-    }
-    console.log('File written successfully');
+// Synchronous file read
+const data = fs.readFileSync("./test.txt", "utf8"); //return the result
+// console.log(data);
+
+// Asynchronous file read
+fs.readFile("./test2.txt", "utf8", (err, data) => { //callback function, didn't return the result
+    if (err) throw err;
+    // console.log(data);
 });
 
-// Appending to a file
-const moreContent = '\nThis is some appended content.'; 
-fs.appendFile('output.txt', moreContent, (err) => {
-    if (err) {
-        console.error('Error appending file:', err);
-        return;
-    }
-    console.log('Content appended successfully');
+// Synchronous file append
+fs.appendFileSync("./test.txt", "\nAppended content.");
+// console.log("Content appended");
+
+// Asynchronous file append
+fs.appendFile("./test2.txt", "\nAppended content.", (err) => {
+    if (err) throw err;
+    // console.log("Content appended");
 });
 
-// Deleting a file
-fs.unlink('output.txt', (err) => {
-    if (err) {
-        console.error('Error deleting file:', err);
-        return;
-    }
-    console.log('File deleted successfully');
+// Synchronous file delete
+// fs.unlinkSync("./test.txt");
+// console.log("File deleted");
+
+// Asynchronous file delete
+fs.unlink("./test2.txt", (err) => {
+    if (err) throw err;
+    // console.log("File deleted");
 });
 
-// Creating a directory
-fs.mkdir('newDir', (err) => {
-    if (err) {
-        console.error('Error creating directory:', err);
-        return;
-    }
-    console.log('Directory created successfully');
-});
+// details of file
+const stats = fs.statSync("./test.txt");
+// console.log(stats.isFile()); // true
+// console.log(stats.isDirectory()); // false
+// console.log(stats.size); // file size in bytes
+// console.log(stats.mtime); // last modified time
+// console.log(stats.ctime); // creation time
+// console.log(stats.atime); // last access time
+// console.log(stats.birthtime); // birth time
+ console.log(stats); // complete details
 
-// Removing a directory
-fs.rmdir('newDir', (err) => {
-    if (err) {
-        console.error('Error removing directory:', err);
-        return;
-    }
-    console.log('Directory removed successfully');
-});
-
-// Checking if a file or directory exists
-fs.access('example.txt', fs.constants.F_OK, (err) => {
-    console.log(`${err ? 'File does not exist' : 'File exists'}`);
-});
-fs.access('newDir', fs.constants.F_OK, (err) => {
-    console.log(`${err ? 'Directory does not exist' : 'Directory exists'}`);
-});
-
-// Renaming a file
-fs.rename('example.txt', 'renamedExample.txt', (err) => {
-    if (err) {
-        console.error('Error renaming file:', err);
-        return;
-    }
-    console.log('File renamed successfully');
-});
+// Synchronous directory create
+fs.mkdirSync("./testDir/a/b/c", { recursive: true });
+// console.log("Directory created");
