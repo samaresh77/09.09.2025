@@ -1,0 +1,8 @@
+New Req at 1759461559774 with URL: / and method: GET
+New Req at 1759461560043 with URL: /favicon.ico and method: GET
+New Req at 1759461697195 with URL: / and method: GET
+New Req at 1759461697288 with URL: /favicon.ico and method: GET
+New Req at 1759461704485 with URL: /about and method: GET
+New Req at 1759461704565 with URL: /favicon.ico and method: GET
+New Req at 1759461715920 with URL: /contact and method: GET
+New Req at 1759461716011 with URL: /favicon.ico and method: GET
