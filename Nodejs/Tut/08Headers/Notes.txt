@@ -1,0 +1,3 @@
+Headers: Http headers are important part of api req and res as they represent the meta data
+associated with the API req and res.
+Headers carry information for the req and res body.
