@@ -1,0 +1,5 @@
+MongoDB:
+a. No-Sql document based database
+b. Strong-Support for aggregation pipes
+c. Works on BSON format
+d. Best for Node applications
