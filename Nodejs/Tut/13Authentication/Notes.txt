@@ -1,0 +1,9 @@
+Authentication Pattern are basically 2 types.
+a.Statefull (which maintains state or data or server side)
+ex. 
+A boy want to park a car then a parkingboy came he give him a parking ticket and ticket no note down his diary.
+Then the boy show the ticket to parkingboy take his car.At this case parkingboy look the ticket no and find his diary
+and when car is find give the car to boy and delete the ticket no to his diary.
+parkingboy--> which maintains a state or data.
+
+b.Stateless (which has no state)
