@@ -1,28 +1,68 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tip Calculator</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tip Calculator</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container">
-        <h1>Tip Calculator</h1>
-        <p>Enter the bill amount and tip percentage to calculate the total.</p>
-        <label for="bill">Bill amount:</label>
-        <input type="number" id="bill">
-        <br/>
-        <label for="tip">Tip percentage:</label>
-        <input type="number" id="tip">
-        <br/>
-        <button id="calculate">Calculate</button>
-        <br/>
-        <label for="total">Total:</label>
-        <span id="total"></span>
+  <div class="background"></div>
+  <div class="container">
+    <h1>💫 Smart Tip Calculator</h1>
+    <p>Instantly calculate your total bill with style.</p>
 
+    <div class="input-group">
+      <label for="bill">Bill Amount ($)</label>
+      <input type="number" id="bill" placeholder="Enter your bill">
     </div>
-    <script src="script.js"></script>
+
+    <div class="input-group">
+      <label for="tip">Tip Percentage (%)</label>
+      <input type="number" id="tip" placeholder="Enter tip %">
+    </div>
+
+    <button id="calculate">
+      <span>Calculate Total</span>
+    </button>
+
+    <div id="result">
+      <h3>Your Total:</h3>
+      <p id="total">$0.00</p>
+    </div>
+  </div>
+
+  <script>
+    const calculateBtn = document.getElementById('calculate');
+    const totalOutput = document.getElementById('total');
+
+    calculateBtn.addEventListener('click', () => {
+      const bill = parseFloat(document.getElementById('bill').value);
+      const tip = parseFloat(document.getElementById('tip').value);
+
+      if (isNaN(bill) || isNaN(tip)) {
+        totalOutput.textContent = "Please enter valid numbers.";
+        return;
+      }
+
+      const total = bill + (bill * tip / 100);
+      let current = 0;
+      const increment = total / 50;
+
+      const interval = setInterval(() => {
+        current += increment;
+        if (current >= total) {
+          current = total;
+          clearInterval(interval);
+        }
+        totalOutput.textContent = `$${current.toFixed(2)}`;
+      }, 15);
+
+      // Add animation pulse
+      totalOutput.classList.remove("pulse");
+      void totalOutput.offsetWidth; // re-trigger animation
+      totalOutput.classList.add("pulse");
+    });
+  </script>
 </body>
 </html>
