@@ -1,23 +1,24 @@
 import express from "express"
 
 
-async function registerUser(req, res) {
+const registerUser = async (req, res) => {
   // Registration logic here
-  const userData = req.body;
-  console.log("Registering user:", userData);
   res.send("User registered");
 }
-async function loginUser(req, res) {
+
+const loginUser = async (req, res) => {
   // Login logic here
   res.send("User logged in");
 }
-async function logoutUser(req, res) {
+
+const logoutUser = async (req, res) => {
   // Logout logic here
   res.send("User logged out");
 }
-async function getUserProfile(req, res) {
+const getUserProfile = async (req, res) => {
   // Get user profile logic here
   res.send("User profile data");
 }
 
 export { registerUser, loginUser, logoutUser, getUserProfile };
+

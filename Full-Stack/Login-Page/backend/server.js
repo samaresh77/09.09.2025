@@ -21,6 +21,10 @@ app.use(express.json());
 // Routes
 app.use("/api/auth", authRoutes);
 
+app.get("/", (req, res) => {
+  res.send("Welcome to the dashboard page!");
+});
+
 // Connect to MongoDB and start the server
 mongoose
   .connect(process.env.MONGO_URI, { 

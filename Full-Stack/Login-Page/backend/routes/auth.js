@@ -15,4 +15,6 @@ router.post("/logout", logoutUser);
 // Get user profile (protected route)
 router.get("/profile", getUserProfile);
 
+
+
 export default router;
