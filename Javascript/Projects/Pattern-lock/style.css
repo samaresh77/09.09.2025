@@ -1,0 +1,159 @@
+/* === Global Reset === */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Poppins", sans-serif;
+    transition: background 0.4s ease, color 0.4s ease;
+}
+
+/* === Root Variables === */
+:root {
+    --bg-gradient: linear-gradient(135deg, #1e3c72, #2a5298);
+    --container-bg: rgba(255, 255, 255, 0.1);
+    --text-color: #fff;
+    --accent: #00bfff;
+    --canvas-bg: rgba(255, 255, 255, 0.05);
+}
+
+/* === Light Mode Variables === */
+body.light {
+    --bg-gradient: linear-gradient(135deg, #f0f4f8, #cfd9df);
+    --container-bg: rgba(255, 255, 255, 0.8);
+    --text-color: #222;
+    --accent: #0077ff;
+    --canvas-bg: rgba(0, 0, 0, 0.05);
+}
+
+/* === Body Styling === */
+body {
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: var(--bg-gradient);
+    color: var(--text-color);
+    overflow: hidden;
+}
+
+/* === Container === */
+.container {
+    position: relative;
+    text-align: center;
+    background: var(--container-bg);
+    padding: 40px 50px;
+    border-radius: 20px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(12px);
+    transition: transform 0.3s ease;
+}
+
+.container:hover {
+    transform: translateY(-5px);
+}
+
+/* === Heading and Subtext === */
+h1 {
+    font-size: 2rem;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+}
+
+p {
+    font-size: 1rem;
+    margin-bottom: 20px;
+    color: var(--text-color);
+    opacity: 0.85;
+}
+
+/* === Pattern Canvas === */
+#pattern-lock {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#pattern-canvas {
+    border-radius: 12px;
+    background: var(--canvas-bg);
+    box-shadow: 0 0 25px rgba(255, 255, 255, 0.1) inset, 
+                0 0 15px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.3s ease;
+}
+
+#pattern-canvas:hover {
+    background: var(--canvas-bg);
+}
+
+/* === Pattern Line Animation === */
+canvas {
+    animation: lineDraw 0.3s ease forwards;
+}
+
+@keyframes lineDraw {
+    from {
+        opacity: 0;
+        transform: scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* === Message Styling === */
+#message {
+    margin-top: 20px;
+    font-size: 1.1rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+/* === Incorrect Pattern Vibration === */
+.vibrate {
+    animation: vibrate 0.3s linear 2;
+}
+
+@keyframes vibrate {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    50% { transform: translateX(5px); }
+    75% { transform: translateX(-3px); }
+}
+
+/* === Mode Toggle Button === */
+.theme-toggle {
+    position: absolute;
+    top: 20px;
+    right: 25px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: white;
+    font-size: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    box-shadow: 0 0 15px var(--accent);
+    transition: all 0.4s ease;
+}
+
+.theme-toggle:hover {
+    transform: rotate(30deg) scale(1.1);
+}
+
+/* === Responsive === */
+@media (max-width: 500px) {
+    .container {
+        width: 90%;
+        padding: 25px;
+    }
+    #pattern-canvas {
+        width: 260px !important;
+        height: 260px !important;
+    }
+}
