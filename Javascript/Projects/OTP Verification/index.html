@@ -104,6 +104,12 @@
     color: #fff;
   }
 
+  .back {
+    background: #fbbf24;
+    color: #fff;
+    font-weight: bold;
+  }
+
   .verify {
     background: #10b981;
     color: #fff;
@@ -158,6 +164,7 @@
       <button onclick="press(9)">9</button>
       <button class="clear" onclick="clearOTP()">C</button>
       <button onclick="press(0)">0</button>
+      <button class="back" onclick="deleteDigit()">←</button>
       <button class="verify" onclick="verifyOTP()">Verify</button>
       <button id="new-otp-btn" class="new-otp" onclick="generateOTP()">Generate New OTP</button>
     </div>
@@ -213,9 +220,13 @@
     if (otp.length < 4) {
       otp += num;
       updateDisplay();
-      if (otp.length === 4) {
-        verifyOTP();
-      }
+    }
+  }
+
+  function deleteDigit() {
+    if (otp.length > 0) {
+      otp = otp.slice(0, -1);
+      updateDisplay();
     }
   }
 
@@ -242,7 +253,7 @@
       timerDisplay.style.color = "#10b981";
       timerDisplay.classList.remove("blink");
       newOtpBtn.classList.remove("blink");
-    } else {
+    } else if (otp.length === 4) {
       msg.style.color = "#ef4444";
       msg.textContent = "❌ Incorrect OTP!";
     }
