@@ -1,48 +1,62 @@
 body {
-    margin: 0;
-    padding: 0;
-    background: antiquewhite;
+  font-family: Arial, sans-serif;
+  background: #f5f5f5;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
 }
+
 .container {
-    margin: 32px auto;
-    background-color: brown;
-    height: 80vh;
-    width: 60vh;
+  background: #fff;
+  padding: 30px;
+  border-radius: 15px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+  width: 90%;
+  max-width: 600px;
+  text-align: center;
 }
+
 h1 {
-    text-align: center;
-    color: white;
-    padding-top: 10px;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  margin-bottom: 20px;
+  color: #333;
 }
-.canvas {
-    margin: 62px auto;
-    background-color: burlywood;
-    height: 40vh;
-    width: 50vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 24px;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+
+label {
+  display: block;
+  margin-top: 15px;
+  margin-bottom: 5px;
+  font-weight: bold;
 }
+
+input, select {
+  padding: 10px;
+  width: 100%;
+  margin-bottom: 15px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
+
 button {
-    margin: 12px;
-    padding: 13px 29px;
-    font-size: 18px;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    cursor: pointer;
+  padding: 10px 20px;
+  margin: 5px;
+  border: none;
+  border-radius: 8px;
+  background-color: #007bff;
+  color: white;
+  cursor: pointer;
+  font-weight: bold;
 }
-.numbers {
-    text-align: center;
-    margin-top: 56px;
+
+button:hover {
+  background-color: #0056b3;
 }
-#num1, #num2, #num3, #num4 {
-    margin: 5px 12px;
-    font-size: 20px;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    font-weight: bold;
-    color: white;
-    border: 2px solid white;
-    padding: 8px 16px;
+
+pre {
+  background: #eee;
+  padding: 15px;
+  border-radius: 10px;
+  text-align: left;
+  white-space: pre-wrap;
+  margin-top: 20px;
 }

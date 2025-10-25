@@ -1,38 +1,38 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Number Pattern</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Number Pattern Project</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container">
-        <h1>Number Pattern</h1>
-        <div class="numbers">
-            <span id="num1">0</span>
-            <span id="num2">0</span>
-            <span id="num3">0</span>
-            <span id="num4">0</span>
-        </div>
-        <div class="canvas">
-            <div>
-                <button id="1">1</button>
-                <button id="2">2</button>
-                <button id="3">3</button>
-            </div>
-            <div>
-                <button id="4">4</button>
-                <button id="5">5</button>
-                <button id="6">6</button>
-            </div>
-            <div>
-                <button id="7">7</button>
-                <button id="8">8</button>
-                <button id="9">9</button>
-            </div>
-        </div>
-    </div>
-    <script src="script.js"></script>
+  <div class="container">
+    <h1>Number Pattern Generator</h1>
+
+    <label for="pattern">Choose a pattern:</label>
+    <select id="pattern">
+      <option value="simpleIncreasing">Simple Increasing</option>
+      <option value="rightAligned">Right-Aligned Triangle</option>
+      <option value="pyramid">Pyramid Pattern</option>
+      <option value="square">Square Pattern</option>
+      <option value="fibonacci">Fibonacci Triangle</option>
+      <option value="reverseTriangle">Reverse Triangle</option>
+      <option value="diamond">Diamond Pattern</option>
+      <option value="zigzag">Zigzag Numbers</option>
+      <option value="oddEvenTriangle">Odd/Even Triangle</option>
+      <option value="multiplicationTriangle">Multiplication Triangle</option>
+    </select>
+
+    <label for="rows">Number of rows:</label>
+    <input type="number" id="rows" min="1" max="50" value="5">
+
+    <button onclick="generatePattern()">Generate Pattern</button>
+    <button onclick="savePattern()">Save Pattern</button>
+
+    <pre id="output"></pre>
+  </div>
+
+  <script src="script.js"></script>
 </body>
 </html>
