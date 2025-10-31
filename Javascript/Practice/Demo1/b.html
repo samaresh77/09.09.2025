@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Short-style Animated Template</title>
+
+  <!-- GSAP CDN for animation timeline -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+  <style>
+    :root{
+      --bg1: #0f1724;
+      --bg2: #0b3a5b;
+      --accent: #ffb86b;
+      --white: #f7f9fb;
+      --shadow: rgba(2,6,23,0.6);
+    }
+    html,body{
+      height:100%;
+      margin:0;
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      -webkit-font-smoothing:antialiased;
+    }
+
+    /* video-safe framing for vertical short (9:16) */
+    .stage {
+      width: 720px;           /* desktop preview size; change for export */
+      height: 1280px;         /* 9:16 vertical */
+      margin: 12px auto;
+      overflow: hidden;
+      position: relative;
+      border-radius: 12px;
+      box-shadow: 0 12px 40px rgba(2,8,23,0.5);
+      background: linear-gradient(180deg, var(--bg1), var(--bg2));
+    }
+
+    /* decorative animated gradient overlay */
+    .gradient {
+      position:absolute;
+      inset: -30% -20%;
+      background: radial-gradient(circle at 10% 10%, rgba(255,184,107,0.12), transparent 8%),
+                  radial-gradient(circle at 90% 90%, rgba(120,200,255,0.06), transparent 10%);
+      filter: blur(18px);
+      pointer-events:none;
+      mix-blend-mode: screen;
+    }
+
+    /* floating shapes container */
+    .shapes {
+      position:absolute;
+      inset:0;
+      pointer-events:none;
+    }
+    .shape {
+      position:absolute;
+      width:120px;
+      height:120px;
+      border-radius:20px;
+      background: linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+      box-shadow: 0 6px 30px rgba(2,6,23,0.4);
+      transform-origin:center;
+      will-change: transform, opacity;
+    }
+
+    /* headline area */
+    .card {
+      position:absolute;
+      left:6%;
+      right:6%;
+      bottom:18%;
+      display:flex;
+      flex-direction:column;
+      gap:16px;
+      align-items:flex-start;
+      pointer-events:auto;
+    }
+
+    .title {
+      font-size:64px;
+      line-height:0.95;
+      color:var(--white);
+      font-weight:700;
+      letter-spacing:-1px;
+      transform-origin:left center;
+      -webkit-font-smoothing:antialiased;
+      text-shadow: 0 8px 30px rgba(8,12,30,0.6);
+    }
+
+    /* masked reveal (we use an overflow hidden mask) */
+    .reveal-mask {
+      display:inline-block;
+      overflow:hidden;
+      height:1.05em; /* hide overflow for reveal */
+      vertical-align:bottom;
+    }
+    .subtitle {
+      font-size:22px;
+      color:rgba(247,249,251,0.85);
+      margin-top:6px;
+      max-width:84%;
+    }
+
+    /* badge/emoji bubble */
+    .bubble {
+      position:absolute;
+      top:8%;
+      right:7%;
+      width:140px;
+      height:140px;
+      border-radius:28px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+      box-shadow: 0 14px 40px rgba(2,8,23,0.5);
+      transform-origin:center;
+    }
+    .bubble .emoji {
+      font-size:56px;
+      filter: drop-shadow(0 8px 20px rgba(0,0,0,0.45));
+    }
+
+    /* quick cut overlay flash */
+    .flash {
+      position:absolute;
+      inset:0;
+      background:#fff;
+      opacity:0;
+      pointer-events:none;
+    }
+
+    /* small CTA strip bottom */
+    .cta {
+      position:absolute;
+      left:6%;
+      right:6%;
+      bottom:6%;
+      height:56px;
+      display:flex;
+      align-items:center;
+      gap:14px;
+    }
+    .cta .pill {
+      background:linear-gradient(90deg,var(--accent), #ff8a5b);
+      color:#061224;
+      padding:12px 18px;
+      border-radius:999px;
+      font-weight:700;
+      box-shadow: 0 8px 30px rgba(255,160,100,0.18);
+    }
+    .cta .hint {
+      color:rgba(247,249,251,0.9);
+      font-weight:600;
+    }
+
+    /* small utility */
+    .hidden{ opacity:0; transform:scale(0.98); }
+  </style>
+</head>
+<body>
+
+  <div class="stage" id="stage">
+    <div class="gradient"></div>
+
+    <div class="shapes" id="shapes">
+      <!-- Example shapes (will be animated) -->
+      <div class="shape" id="s1" style="left:8%; top:14%; width:140px; height:140px; border-radius:28px;"></div>
+      <div class="shape" id="s2" style="left:60%; top:6%; width:220px; height:220px; border-radius:110px;"></div>
+      <div class="shape" id="s3" style="left:28%; top:44%; width:96px; height:96px; border-radius:18px;"></div>
+      <svg style="position:absolute; left:14%; top:74%; width:120px; height:120px; transform:rotate(-10deg)" viewBox="0 0 100 100">
+        <circle cx="50" cy="50" r="40" fill="rgba(255,255,255,0.02)"/>
+        <path d="M20 70 Q50 0 80 70 Z" fill="rgba(255,184,107,0.06)"/>
+      </svg>
+    </div>
+
+    <div class="bubble hidden" id="bubble">
+      <div class="emoji">🔥</div>
+    </div>
+
+    <div class="card">
+      <div class="title">
+        <span class="reveal-mask" id="mask1"><span id="line1">How I doubled</span></span>
+        <br/>
+        <span class="reveal-mask" id="mask2"><span id="line2">my productivity</span></span>
+      </div>
+
+      <div class="subtitle" id="subtitle">3 simple tweaks — no apps, no hype. Watch till the end 👇</div>
+    </div>
+
+    <div class="cta hidden" id="cta">
+      <div class="pill">Try this</div>
+      <div class="hint">Quick tips • 0:20</div>
+    </div>
+
+    <div class="flash" id="flash"></div>
+  </div>
+
+  <script>
+    // ---- Helpful notes:
+    // - Stage is 720x1280 (vertical). For final video export, record at 720x1280 or 1080x1920.
+    // - You can replace text, emoji, and shapes to match the short exactly.
+    // - GSAP used for sequencing and easing.
+
+    const tl = gsap.timeline({ defaults: {ease:"power3.out"} });
+
+    // initial subtle parallax/float on shapes
+    function initShapes() {
+      gsap.set("#s1",{background:"linear-gradient(135deg,#ffb86b22,#7bd8ff10)"});
+      gsap.set("#s2",{background:"linear-gradient(135deg,#ffffff08,#ffffff02)"});
+      gsap.set("#s3",{background:"linear-gradient(135deg,#bde7ff12,#ffffff04)"});
+      gsap.to("#s1", {y:18, x:6, rotation:6, duration:6, yoyo:true, repeat:-1, ease:"sine.inOut"});
+      gsap.to("#s2", {y:-26, x:-18, rotation:-7, duration:8, yoyo:true, repeat:-1, ease:"sine.inOut"});
+      gsap.to("#s3", {y:12, x:10, rotation:12, duration:5, yoyo:true, repeat:-1, ease:"sine.inOut"});
+    }
+
+    initShapes();
+
+    // helper: masked reveal of a line — moves from bottom clip up & scale bounce
+    function revealLine(maskSelector, textSelector, delay=0) {
+      tl.to(maskSelector, {height: "1.05em", duration:0}); // ensure proper height
+      tl.fromTo(textSelector, {y:24, scale:1.06, opacity:0}, {y:0, opacity:1, scale:1, duration:0.6, ease:"back.out(1.6)"}, "+="+delay);
+    }
+
+    // main sequence
+    tl.set(["#mask1 span","#mask2 span","#subtitle","#bubble","#cta"], {opacity:0, y:20});
+
+    // entrance - zoom slightly and fade in
+    tl.from("#stage", {scale:1.02, duration:0.9, ease:"power2.out"});
+    tl.to("#stage", {scale:1, duration:0.9, ease:"power2.out"}, 0);
+
+    // reveal first line
+    tl.add(()=> { /* small sound cue could be triggered here if used in editor */ }, 0.12);
+    tl.to("#mask1", {height:"1.05em", duration:0}, 0.18);
+    tl.fromTo("#line1", {y:36, opacity:0, scale:1.08}, {y:0, opacity:1, scale:1, duration:0.6, ease:"back.out(1.5)"}, 0.18);
+
+    // slight pop bubble
+    tl.to("#bubble", {opacity:1, scale:1.05, duration:0.5, ease:"back.out(1.7)", onStart: ()=> {
+      // change emoji or color for each run if desired
+      document.getElementById("bubble").querySelector(".emoji").textContent = "🔥";
+    }}, 0.42);
+
+    // small flash transition and line change
+    tl.to("#flash", {opacity:0.9, duration:0.08, ease:"power1.in"}, 1.0);
+    tl.to("#flash", {opacity:0, duration:0.08, ease:"power1.out"}, 1.09);
+
+    // second line reveal
+    tl.to("#line1", {y:-10, opacity:0, scale:0.98, duration:0.35, ease:"power2.in"}, 1.12);
+    tl.fromTo("#line2", {y:36, opacity:0, scale:1.08}, {y:0, opacity:1, scale:1, duration:0.6, ease:"back.out(1.5)"}, 1.28);
+
+    // subtitle appears
+    tl.to("#subtitle", {opacity:1, y:0, duration:0.5, ease:"power2.out"}, 1.6);
+
+    // small emoji pop and rotate
+    tl.to("#bubble", {scale:1.28, rotation:6, duration:0.36, ease:"elastic.out(1,0.6)"}, 1.5);
+    tl.to("#bubble", {scale:1, rotation:0, duration:0.5, ease:"power2.out"}, 1.86);
+
+    // small camera-shake cut before CTA
+    tl.to("#stage", {y:-8, duration:0.06, yoyo:true, repeat:1, ease:"sine.inOut"}, 2.6);
+    tl.to("#stage", {y:0, duration:0.12, ease:"sine.out"}, 2.76);
+
+    // CTA slide up
+    tl.to("#cta", {opacity:1, y:0, duration:0.5, ease:"back.out(1.2)"}, 2.9);
+
+    // outro flash and exit (for loopable short)
+    tl.to("#flash", {opacity:0.9, duration:0.06, ease:"power1.in"}, 3.5);
+    tl.to(["#line2","#subtitle","#bubble","#cta"], {opacity:0, y:-24, duration:0.45, ease:"power2.in"}, 3.56);
+    tl.to("#flash", {opacity:0, duration:0.08, ease:"power1.out"}, 4.07);
+
+    // You can repeat or go to final card:
+    // final card pop
+    tl.to("#stage", {scale:1.01, duration:0.6, ease:"power2.out"}, 4.1);
+    tl.to("#stage", {scale:1, duration:0.6, ease:"power2.in"}, 4.8);
+
+    // OPTIONAL: loop the animation or stop at end
+    // tl.repeat(-1); // uncomment to loop forever
+
+    // Responsive: scale stage to fit viewport if small
+    function fitStage() {
+      const s = document.getElementById('stage');
+      const winW = window.innerWidth;
+      if (winW < 780) {
+        const scale = Math.min((winW - 24) / 720, (window.innerHeight - 60) / 1280);
+        s.style.transform = `scale(${scale})`;
+        s.style.transformOrigin = 'top center';
+      } else {
+        s.style.transform = '';
+      }
+    }
+    window.addEventListener('resize', fitStage);
+    fitStage();
+
+    // Quick helper to change content programmatically:
+    window.updateContent = function({line1, line2, subtitle, emoji}) {
+      if(line1) document.getElementById('line1').textContent = line1;
+      if(line2) document.getElementById('line2').textContent = line2;
+      if(subtitle) document.getElementById('subtitle').textContent = subtitle;
+      if(emoji) document.querySelector('#bubble .emoji').textContent = emoji;
+    };
+
+    // Example: dynamically change to test:
+    // setTimeout(()=> updateContent({line1:"New hook", line2:"short and punchy", emoji:"💡"}), 6000);
+
+  </script>
+</body>
+</html>
