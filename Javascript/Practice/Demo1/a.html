@@ -1,0 +1,421 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Shorts Creator — Demo</title>
+<style>
+  /* Container sizes 9:16 vertical (1080x1920 style) */
+  :root { --w: 360px; --h: 640px; } /* change for preview size */
+  body { font-family: Inter, system-ui, sans-serif; display:flex; gap:20px; padding:20px; background:#0b1220; color:#eee; align-items:flex-start; }
+  .canvas-wrap { width: calc(var(--w) + 20px); background:#000; padding:10px; border-radius:12px; box-shadow:0 6px 30px rgba(0,0,0,0.6); }
+  #preview { width: var(--w); height: var(--h); background:#111; position:relative; overflow:hidden; border-radius:12px; }
+  video#source { display:none; } /* hidden original - we draw it to canvas */
+  canvas#stage { width:100%; height:100%; display:block; background:#000; border-radius:12px; }
+  /* overlay elements (positioned on canvas via JS or drawn directly) */
+  .controls { margin-left: 18px; max-width:420px; }
+  button { background:#172e44; color:#fff; border:0; padding:8px 12px; border-radius:8px; cursor:pointer; }
+  .btn-row { display:flex; gap:8px; margin:8px 0; }
+  label, input, select, textarea { display:block; width:100%; margin:6px 0 12px 0; }
+  .caption-preview { background:rgba(255,255,255,0.04); padding:8px; border-radius:8px; color:#fff; font-weight:600; text-align:center; }
+  /* quick visual styles for captions */
+  .caption-style { font-family: 'Segoe UI', Roboto, Arial; font-weight:700; text-shadow:0 3px 18px rgba(0,0,0,0.8); }
+</style>
+</head>
+<body>
+
+<div class="canvas-wrap">
+  <div id="preview">
+    <video id="source" playsinline crossorigin="anonymous">
+      <!-- Replace src with your vertical MP4 -->
+      <source src="sample-vertical.mp4" type="video/mp4">
+      Your browser doesn't support HTML5 video.
+    </video>
+    <canvas id="stage" width="360" height="640"></canvas>
+  </div>
+</div>
+
+<div class="controls">
+  <h2>Shorts Creator — Demo</h2>
+
+  <div class="btn-row">
+    <button id="playBtn">Play</button>
+    <button id="pauseBtn">Pause</button>
+    <button id="recordBtn">Start Recording</button>
+    <button id="stopRecordBtn" disabled>Stop Recording</button>
+    <a id="downloadLink" style="display:none;">Download</a>
+  </div>
+
+  <label>Caption text (comma-separated timed cues, format: startMs|text)</label>
+  <textarea id="captions" rows="4">500|When life gives you lemons,...,2000|Make lemonade!,3000|Then add music 🎵</textarea>
+
+  <label>Music (optional) — paste audio URL (mp3) or leave blank for original video audio</label>
+  <input id="musicUrl" placeholder="https://.../music.mp3" />
+
+  <label>Zoom & pan intensity (0.0 - 0.5)</label>
+  <input id="zoom" type="range" min="0" max="0.5" step="0.01" value="0.12" />
+
+  <div style="margin-top:12px;">
+    <div class="caption-preview">Preview of captions & timing will show on video. Click Play then Record to export.</div>
+  </div>
+</div>
+
+<script>
+/*
+  How this works:
+  - Hidden <video id="source"> loads your vertical clip.
+  - JS draws video frames to a <canvas> and overlays captions/animations.
+  - MediaRecorder records canvas.stream to produce a webm video (or mp4 depending on browser).
+  - You can optionally mix an external audio file (not implemented into final file in-browser due to complexities,
+    but the browser MediaRecorder will capture canvas visuals + captured audio track if we attach it).
+*/
+
+// elements
+const source = document.getElementById('source');
+const canvas = document.getElementById('stage');
+const ctx = canvas.getContext('2d', { alpha: false });
+const playBtn = document.getElementById('playBtn');
+const pauseBtn = document.getElementById('pauseBtn');
+const recordBtn = document.getElementById('recordBtn');
+const stopRecordBtn = document.getElementById('stopRecordBtn');
+const downloadLink = document.getElementById('downloadLink');
+const captionsInput = document.getElementById('captions');
+const musicUrlInput = document.getElementById('musicUrl');
+const zoomInput = document.getElementById('zoom');
+
+let rafId = null;
+let startTime = 0;
+let parsedCaptions = [];
+let recorder, recordedChunks = [];
+let audioElement = null; // optional external audio
+let capturingAudioStream = null;
+
+function parseCaptions() {
+  // Format: "500|Hello,2000|Next line,3500|And more"
+  const raw = captionsInput.value;
+  const parts = raw.split(',');
+  parsedCaptions = parts.map(p => {
+    const [t, ...rest] = p.split('|');
+    const text = rest.join('|')?.trim() || '';
+    const ms = parseInt(t) || 0;
+    return { start: ms / 1000, text }; // seconds
+  }).sort((a,b)=>a.start-b.start);
+}
+parseCaptions();
+
+captionsInput.addEventListener('change', parseCaptions);
+captionsInput.addEventListener('input', parseCaptions);
+
+source.addEventListener('loadedmetadata', () => {
+  // Scale canvas to video natural width/height or use our target resolution
+  // canvas.width/height already set to preview size; but when recording, we want a higher resolution optionally.
+});
+
+function drawFrame() {
+  // draw current video frame with optional zoom/pan and overlays
+  const w = canvas.width, h = canvas.height;
+  // Clear
+  ctx.fillStyle = '#000'; ctx.fillRect(0,0,w,h);
+
+  // basic "Ken Burns" like slow zoom
+  const z = parseFloat(zoomInput.value) || 0;
+  const t = source.currentTime || 0;
+  const duration = Math.max(1, source.duration || 1);
+  const prog = Math.min(1, t / duration);
+  // compute dynamic scale (start 1.0 -> 1.0+z)
+  const scale = 1 + z * Math.sin(prog * Math.PI); // smooth in-out
+  // draw video centered with scale
+  const vw = source.videoWidth || w, vh = source.videoHeight || h;
+  // fit-video-to-canvas while preserving aspect
+  const arV = vw/vh, arC = w/h;
+  let drawW, drawH;
+  if (arV > arC) { drawH = h; drawW = drawH * arV; } else { drawW = w; drawH = drawW / arV; }
+  // apply scale
+  drawW *= scale; drawH *= scale;
+  const dx = (w - drawW) / 2;
+  const dy = (h - drawH) / 2;
+  ctx.drawImage(source, 0,0, vw, vh, dx, dy, drawW, drawH);
+
+  // overlay: semi-transparent gradient at bottom
+  const g = ctx.createLinearGradient(0, h*0.6, 0, h);
+  g.addColorStop(0, 'rgba(0,0,0,0)');
+  g.addColorStop(1, 'rgba(0,0,0,0.6)');
+  ctx.fillStyle = g; ctx.fillRect(0, h*0.6, w, h*0.4);
+
+  // draw caption if any for this time
+  const now = t;
+  // pick last caption whose start <= now
+  const activeIndex = parsedCaptions.reduce((acc, c, i) => (c.start <= now ? i : acc), -1);
+  if (activeIndex >= 0) {
+    const c = parsedCaptions[activeIndex];
+    // simple fade-in/out based on relative time (appear for ~1.8s)
+    const rel = now - c.start;
+    const life = 1.8;
+    if (rel < life) {
+      const alpha = Math.min(1, rel / 0.35); // fade in
+      const fadeOut = Math.max(0, (life - rel) / 0.6); // fade out near end
+      const finalAlpha = Math.min(alpha, fadeOut);
+      ctx.globalAlpha = finalAlpha;
+      // caption box
+      const pad = 16;
+      const maxWidth = w - 40;
+      ctx.font = '700 28px system-ui, Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      // measure text, wrap if necessary
+      const lines = wrapText(ctx, c.text, maxWidth);
+      const lineHeight = 34;
+      const boxH = lines.length * lineHeight + pad*2;
+      const boxW = Math.min(maxWidth, Math.max(...lines.map(L=>ctx.measureText(L).width)) + pad*2);
+      const bx = (w - boxW)/2;
+      const by = h - boxH - 34;
+      // rounded rect
+      roundRect(ctx, bx, by, boxW, boxH, 14);
+      ctx.fillStyle = 'rgba(255,255,255,0.06)';
+      ctx.fill();
+      // text
+      ctx.fillStyle = '#fff';
+      for (let i=0;i<lines.length;i++){
+        ctx.fillText(lines[i], w/2, by + pad + (i+0.5)*lineHeight);
+      }
+      ctx.globalAlpha = 1.0;
+    }
+  }
+
+  // small watermark bottom-left
+  ctx.font = '600 12px system-ui';
+  ctx.fillStyle = 'rgba(255,255,255,0.6)';
+  ctx.fillText('@your_handle', 12, h - 12);
+
+  // optional animated tick/emoji at top-right
+  const bounce = Math.abs(Math.sin(t * 4));
+  ctx.save();
+  ctx.translate(w - 46, 22 - bounce*6);
+  ctx.font = '28px serif';
+  ctx.fillText('✨', 0, 0);
+  ctx.restore();
+
+  // schedule next frame if playing
+  if (!source.paused && !source.ended) {
+    rafId = requestAnimationFrame(drawFrame);
+  } else {
+    cancelAnimationFrame(rafId);
+  }
+}
+
+// small utilities
+function roundRect(ctx,x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);
+  ctx.arcTo(x,y,x+w,y,r);
+  ctx.closePath();
+}
+
+function wrapText(ctx, text, maxWidth) {
+  // naive split on spaces
+  const words = text.split(' ');
+  const lines = [];
+  let line = '';
+  for (let w of words) {
+    const test = line ? line + ' ' + w : w;
+    const width = ctx.measureText(test).width;
+    if (width > maxWidth && line) { lines.push(line); line = w; } else { line = test; }
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
+// playback controls
+playBtn.onclick = async () => {
+  if (!source.src) { alert('Replace sample-vertical.mp4 with your clip in the <video> tag.'); return; }
+  // try load external audio if provided
+  const musicUrl = musicUrlInput.value.trim();
+  if (musicUrl && !audioElement) {
+    audioElement = new Audio(musicUrl);
+    audioElement.crossOrigin = "anonymous";
+    audioElement.loop = false;
+    // We won't mix audio tracks into canvas automatically here. For better mixing you need WebAudio node merging.
+  }
+  await source.play();
+  if (audioElement) { try { audioElement.currentTime = 0; await audioElement.play(); } catch(e){console.warn(e);} }
+  // start RAF
+  cancelAnimationFrame(rafId);
+  rafId = requestAnimationFrame(drawFrame);
+};
+pauseBtn.onclick = () => {
+  source.pause();
+  if (audioElement) audioElement.pause();
+  cancelAnimationFrame(rafId);
+};
+
+// Recording (canvas capture)
+recordBtn.onclick = async () => {
+  parseCaptions();
+  // Resize canvas for export quality (e.g., 720x1280). We'll create an offscreen high-res canvas and draw video frames scaled.
+  const exportWidth = 720; const exportHeight = 1280;
+  const exportCanvas = document.createElement('canvas');
+  exportCanvas.width = exportWidth;
+  exportCanvas.height = exportHeight;
+  const exCtx = exportCanvas.getContext('2d', { alpha: false });
+
+  // replace drawing function to use export canvas while recording
+  function drawExportFrame() {
+    // similar to drawFrame but using export canvas dims
+    const w = exportCanvas.width, h = exportCanvas.height;
+    exCtx.fillStyle = '#000'; exCtx.fillRect(0,0,w,h);
+
+    const z = parseFloat(zoomInput.value) || 0;
+    const t = source.currentTime || 0;
+    const duration = Math.max(1, source.duration || 1);
+    const prog = Math.min(1, t / duration);
+    const scale = 1 + z * Math.sin(prog * Math.PI);
+
+    const vw = source.videoWidth || w, vh = source.videoHeight || h;
+    const arV = vw/vh, arC = w/h;
+    let drawW, drawH;
+    if (arV > arC) { drawH = h; drawW = drawH * arV; } else { drawW = w; drawH = drawW / arV; }
+    drawW *= scale; drawH *= scale;
+    const dx = (w - drawW) / 2;
+    const dy = (h - drawH) / 2;
+    exCtx.drawImage(source, 0,0, vw, vh, dx, dy, drawW, drawH);
+
+    // caption gradient
+    const g = exCtx.createLinearGradient(0, h*0.6, 0, h);
+    g.addColorStop(0, 'rgba(0,0,0,0)');
+    g.addColorStop(1, 'rgba(0,0,0,0.6)');
+    exCtx.fillStyle = g; exCtx.fillRect(0, h*0.6, w, h*0.4);
+
+    const now = t;
+    const activeIndex = parsedCaptions.reduce((acc, c, i) => (c.start <= now ? i : acc), -1);
+    if (activeIndex >= 0) {
+      const c = parsedCaptions[activeIndex];
+      const rel = now - c.start;
+      const life = 1.8;
+      if (rel < life) {
+        const alpha = Math.min(1, rel / 0.35);
+        const fadeOut = Math.max(0, (life - rel) / 0.6);
+        const finalAlpha = Math.min(alpha, fadeOut);
+        exCtx.globalAlpha = finalAlpha;
+        const pad = 28;
+        const maxWidth = w - 120;
+        exCtx.font = '800 56px system-ui';
+        exCtx.textAlign = 'center';
+        exCtx.textBaseline = 'middle';
+        const lines = wrapText(exCtx, c.text, maxWidth);
+        const lineHeight = 64;
+        const boxH = lines.length * lineHeight + pad*2;
+        const boxW = Math.min(maxWidth, Math.max(...lines.map(L=>exCtx.measureText(L).width)) + pad*2);
+        const bx = (w - boxW)/2;
+        const by = h - boxH - 80;
+        roundRect(exCtx, bx, by, boxW, boxH, 24);
+        exCtx.fillStyle = 'rgba(255,255,255,0.06)';
+        exCtx.fill();
+        exCtx.fillStyle = '#fff';
+        for (let i=0;i<lines.length;i++){
+          exCtx.fillText(lines[i], w/2, by + pad + (i+0.5)*lineHeight);
+        }
+        exCtx.globalAlpha = 1.0;
+      }
+    }
+    // watermark
+    exCtx.font = '700 20px system-ui';
+    exCtx.fillStyle = 'rgba(255,255,255,0.6)';
+    exCtx.fillText('@your_handle', 24, h - 28);
+    // sparkle
+    const bounce = Math.abs(Math.sin(t * 4));
+    exCtx.save();
+    exCtx.translate(w - 84, 44 - bounce*10);
+    exCtx.font = '48px serif';
+    exCtx.fillText('✨', 0, 0);
+    exCtx.restore();
+  }
+
+  // create captured stream from canvas
+  const stream = exportCanvas.captureStream(30); // 30 fps
+  // Optionally add audio: attach source audio track if user wants video audio
+  // To keep it simple: capture original video's audio if available (works if same-origin & allowed)
+  let audioTracksAdded = false;
+  try {
+    const audioStream = source.mozCaptureStream ? source.mozCaptureStream() : source.captureStream ? source.captureStream() : null;
+    if (audioStream) {
+      // audioStream contains audio track if the <video> has audio and cross-origin allows.
+      const audioTrack = audioStream.getAudioTracks()[0];
+      if (audioTrack) {
+        stream.addTrack(audioTrack);
+        audioTracksAdded = true;
+      }
+    }
+  } catch (e) {
+    console.warn('Could not capture video audio track due to cross-origin or browser limits.', e);
+  }
+
+  // If user provided music URL, we can try to fetch and play it and capture via WebAudio (advanced). Omitted for brevity.
+
+  recordedChunks = [];
+  recorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp9' });
+  recorder.ondataavailable = ev => { if (ev.data && ev.data.size) recordedChunks.push(ev.data); };
+  recorder.onstop = () => {
+    const blob = new Blob(recordedChunks, { type: 'video/webm' });
+    const url = URL.createObjectURL(blob);
+    downloadLink.href = url;
+    downloadLink.download = 'shorts_export.webm';
+    downloadLink.style.display = 'inline-block';
+    downloadLink.textContent = 'Download video';
+    stopRecordBtn.disabled = true;
+    recordBtn.disabled = false;
+  };
+  recorder.start(100); // collect in 100ms chunks
+
+  // start video playback at beginning and start draw loop for exportCanvas
+  source.currentTime = 0;
+  await source.play();
+  // play external audio if present (not mixed into exported file automatically)
+  if (audioElement) { try { audioElement.currentTime = 0; audioElement.play(); } catch(e){} }
+
+  recordBtn.disabled = true;
+  stopRecordBtn.disabled = false;
+
+  // Use setInterval to draw exported frames synced to requestAnimationFrame and video
+  let last = performance.now();
+  function exportLoop() {
+    if (source.paused || source.ended) {
+      // draw one last frame then stop
+      drawExportFrame();
+      return;
+    }
+    drawExportFrame();
+    rafId = requestAnimationFrame(exportLoop);
+  }
+  rafId = requestAnimationFrame(exportLoop);
+
+  // attach onended to stop recording when video ends
+  source.onended = () => {
+    if (recorder && recorder.state === 'recording') {
+      recorder.stop();
+    }
+    cancelAnimationFrame(rafId);
+  };
+};
+
+stopRecordBtn.onclick = () => {
+  if (recorder && recorder.state === 'recording') recorder.stop();
+  try { source.pause(); } catch(e){}
+  if (audioElement) audioElement.pause();
+  stopRecordBtn.disabled = true;
+  recordBtn.disabled = false;
+};
+
+// Draw loop for preview canvas syncing with source
+source.addEventListener('play', () => {
+  cancelAnimationFrame(rafId);
+  rafId = requestAnimationFrame(drawFrame);
+});
+source.addEventListener('pause', () => cancelAnimationFrame(rafId));
+source.addEventListener('seeked', () => { if (!source.paused) rafId = requestAnimationFrame(drawFrame); });
+
+</script>
+</body>
+</html>
