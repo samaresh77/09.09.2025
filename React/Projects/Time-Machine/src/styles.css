@@ -1,0 +1,42 @@
+body {
+  margin: 0;
+  background-color: black;
+  color: white;
+  font-family: 'Orbitron', sans-serif;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.container {
+  text-align: center;
+}
+
+input {
+  background: transparent;
+  border: 2px solid cyan;
+  color: cyan;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 18px;
+  text-align: center;
+}
+
+button {
+  background: cyan;
+  border: none;
+  color: black;
+  margin-left: 10px;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 18px;
+  transition: all 0.3s ease;
+}
+
+button:hover {
+  background: white;
+  color: black;
+}
