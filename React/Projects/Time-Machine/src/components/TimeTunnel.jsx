@@ -1,13 +1,6 @@
 import React, { useRef, useEffect } from "react";
 import * as THREE from "three";
 
-/*
-  TimeTunnel.jsx
-  - Creates a swirling tunnel built from many thin ring meshes and a particle field.
-  - Camera moves forward briefly when isActive is true, with shader-like color/glow via materials.
-  - Designed to be easy to tune and performant (instanced-ish approach avoided to keep code simple).
-*/
-
 export default function TimeTunnel({ isActive }) {
   const mountRef = useRef(null);
   const frameRef = useRef({});
@@ -23,7 +16,7 @@ export default function TimeTunnel({ isActive }) {
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.setClearColor(0x000000, 0); // transparent background
+    renderer.setClearColor(0x000000, 0);
     mount.appendChild(renderer.domElement);
 
     // Scene + Camera
@@ -31,17 +24,14 @@ export default function TimeTunnel({ isActive }) {
     const camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 2000);
     camera.position.set(0, 0, 10);
 
-    // Add subtle fog
     scene.fog = new THREE.FogExp2(0x000814, 0.008);
 
-    // Lights for subtle shading
     const aLight = new THREE.AmbientLight(0xffffff, 0.3);
     scene.add(aLight);
     const pLight = new THREE.PointLight(0x00e5ff, 0.6, 800);
     pLight.position.set(0, 50, 50);
     scene.add(pLight);
 
-    // Tunnel rings
     const rings = new THREE.Group();
     scene.add(rings);
 
@@ -59,11 +49,11 @@ export default function TimeTunnel({ isActive }) {
       });
       const mesh = new THREE.Mesh(geometry, mat);
       mesh.rotation.x = Math.PI / 2;
-      mesh.position.z = -i * 6; // stretch the tunnel along -z
+      mesh.position.z = -i * 6;
       rings.add(mesh);
     }
 
-    // Particle field
+    // Particles
     const particleCount = 1200;
     const particlesGeo = new THREE.BufferGeometry();
     const positions = new Float32Array(particleCount * 3);
@@ -81,7 +71,6 @@ export default function TimeTunnel({ isActive }) {
     particlesGeo.setAttribute("size", new THREE.BufferAttribute(sizes, 1));
 
     const sprite = new THREE.TextureLoader().load(
-      // tiny data-uri white circle fallback
       "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16'><circle cx='8' cy='8' r='8' fill='white'/></svg>"
     );
 
@@ -97,7 +86,7 @@ export default function TimeTunnel({ isActive }) {
     const particlePoints = new THREE.Points(particlesGeo, particlesMat);
     scene.add(particlePoints);
 
-    // subtle starfield far back
+    // stars
     const starsGeo = new THREE.BufferGeometry();
     const starCount = 400;
     const starPos = new Float32Array(starCount * 3);
@@ -113,7 +102,7 @@ export default function TimeTunnel({ isActive }) {
     );
     scene.add(stars);
 
-    // handle resize
+    // resize
     function onResize() {
       const w = mount.clientWidth;
       const h = mount.clientHeight;
@@ -121,73 +110,83 @@ export default function TimeTunnel({ isActive }) {
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
     }
-
     window.addEventListener("resize", onResize);
 
     // animation state
     let t = 0;
-    let forwardBoost = 0; // used to accelerate camera while traveling
+    let forwardBoost = 0;
     let last = performance.now();
+    let shakeAmount = 0;
 
     function animate(now) {
       frameRef.current.requestId = requestAnimationFrame(animate);
-
       const dt = (now - last) / 1000;
       last = now;
       t += dt;
 
-      // Slowly rotate rings for swirling feeling
+      // rings rotation
       rings.rotation.z = Math.sin(t * 0.35) * 0.2;
       rings.rotation.y += dt * 0.02;
 
-      // Particles slowly orbit and move toward camera
+      // particles move forward
       const pos = particlesGeo.attributes.position.array;
       for (let i = 0; i < particleCount; i++) {
         const idx = i * 3;
-        // move z forward slightly (toward camera)
         pos[idx + 2] += 8 * dt * (0.2 + (i % 10) * 0.01);
-        // wrap particles that passed the camera back deep into tunnel
         if (pos[idx + 2] > camera.position.z + 10) {
           pos[idx + 2] = -Math.random() * ringCount * 6 - 40;
         }
       }
       particlesGeo.attributes.position.needsUpdate = true;
 
-      // camera idle slight bob
+      // camera idle
       camera.position.x = Math.sin(t * 0.2) * 0.3;
       camera.position.y = Math.cos(t * 0.15) * 0.18;
 
-      // When isActive, apply a strong forward movement and color surge
+      // When traveling: ramp up forward movement and apply camera shake
       if (isActive) {
-        forwardBoost += dt * 2.5; // ramp up
-        camera.position.z -= (5 + forwardBoost) * dt * 14; // move forward (into negative z)
+        forwardBoost += dt * 2.5; // ramp
+        // stronger forward speed while active
+        camera.position.z -= (6 + forwardBoost) * dt * 16;
+
+        // increase shake amount with forwardBoost (cap it)
+        shakeAmount = Math.min(1.6, shakeAmount + dt * 3.0);
+
+        // apply camera shake offset
+        const shakeX = (Math.random() - 0.5) * shakeAmount * 0.25;
+        const shakeY = (Math.random() - 0.5) * shakeAmount * 0.25;
+        const shakeZ = (Math.random() - 0.5) * shakeAmount * 0.3;
+
+        camera.position.x += shakeX;
+        camera.position.y += shakeY;
+        camera.position.z += shakeZ;
       } else {
-        // relax back slowly
+        // relax
         forwardBoost = Math.max(0, forwardBoost - dt * 4.0);
-        // slowly return camera to origin z
-        camera.position.z += (camera.position.z < 10 ? Math.min(2 * dt * 10, 10 - camera.position.z) : 0);
+        shakeAmount = Math.max(0, shakeAmount - dt * 3.0);
+        // slowly return camera to z = 10
+        if (camera.position.z < 10) {
+          camera.position.z += Math.min(2 * dt * 10, 10 - camera.position.z);
+        }
       }
 
-      // subtle parallax: rotate particle field
+      // rotate particle field
       particlePoints.rotation.z += dt * 0.06 * (isActive ? 3 : 1);
 
       renderer.render(scene, camera);
     }
 
-    // kick off loop
     last = performance.now();
     frameRef.current.requestId = requestAnimationFrame(animate);
 
-    // Clean up
+    // cleanup
     return () => {
       cancelAnimationFrame(frameRef.current.requestId);
       window.removeEventListener("resize", onResize);
       renderer.dispose();
-      // Remove DOM node
       mount.removeChild(renderer.domElement);
     };
   }, [isActive]);
 
-  // Canvas container will fill parent
   return <div ref={mountRef} style={{ width: "100%", height: "100vh" }} />;
 }

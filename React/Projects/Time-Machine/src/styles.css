@@ -100,3 +100,47 @@ body {
   position: absolute;
   inset: 0;
 }
+
+/* Responsive adjustments */
+@media (max-width: 880px) {
+  .ui {
+    position: fixed;
+    bottom: 12px;
+    left: 12px;
+    right: 12px;
+    width: auto;
+    padding: 14px;
+    border-radius: 12px;
+  }
+
+  .info-panel {
+    position: fixed;
+    right: 12px;
+    left: 12px;
+    top: auto;
+    bottom: 88px;
+    width: auto;
+  }
+
+  .input-row {
+    flex-direction: row;
+    gap: 8px;
+  }
+
+  .btn {
+    padding: 10px;
+    font-size: 14px;
+  }
+}
+
+/* Make buttons larger for touch */
+.btn {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Minor accessibility */
+input::placeholder {
+  color: rgba(0, 229, 255, 0.35);
+}
+
