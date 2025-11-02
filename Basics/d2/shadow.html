@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        h1 {
+            text-shadow: 3px 3px 5px red ,   /* horizontal offset, vertical offset, blur radius, color */
+                         -2px -2px 5px blue; /* multiple shadows can be added */
+        }
+        #box {
+            width: 150px;
+            height: 150px;
+            background-color: lightgreen;
+            box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.3); /* horizontal offset, vertical offset, blur radius, color */
+            margin: auto;
+        }
+        #Box1 {
+            width: 150px;
+            height: 150px;
+            background-color: lightcoral;
+            box-shadow: inset 5px 5px 15px rgba(0, 0, 0, 0.3); /* inset shadow */
+            margin-left: auto;
+        }
+        #Box2 {
+            width: 150px;
+            height: 150px;
+            background-color: lightblue;
+            box-shadow: 0 0 10px 5px rgba(0, 0, 0, 0.2); /* spread radius */
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>
+        This is a heading.
+    </h1>
+    <!-- margins = space around an elements -->
+    <div id="box">Box</div>
+    <div id="Box1">Box1</div>
+    <div id="Box2">Box2</div>
+</body>
+</html>
