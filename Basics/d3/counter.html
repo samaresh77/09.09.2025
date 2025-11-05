@@ -48,7 +48,7 @@
 <body>
     <div id="box">
         <h1>Counter App</h1>
-        <p id="result">0</p>
+        <p id="result">00</p>
         <div id="btn">
             <button id="b1">Increase</button>
             <button id="b2">Reset</button>
@@ -65,18 +65,33 @@
 
         reset.addEventListener('click',  () => {
             counter = 0;
-            result.innerText = 0;
+            result.innerText = '00';
             console.log(counter);
             
         })
         incBtn.addEventListener('click', () => {
             counter++;
-            result.innerText = counter.toString();
+            if(counter<10){
+                result.innerText = `0${counter.toString()}`;
+            }
+            else{
+                result.innerText = counter.toString();
+            }
             console.log(counter);
         })
         function Dec () {
             counter--;
-            result.innerText = counter.toString();
+            if(counter<0){
+                counter = 0;
+                result.innerText = `00`;
+                alert("Number should not be negetive integer")
+            }
+            else if(counter>=0 && counter<10){
+                result.innerText = `0${counter.toString()}`;
+            }
+            else{
+                result.innerText = counter.toString();
+            }
             console.log(counter);
         }
         
