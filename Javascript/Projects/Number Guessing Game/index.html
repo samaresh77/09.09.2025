@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Animated Number Guessing Game</title>
+  <style>
+    :root{
+      --bg:#0f1724; --card:#0b1220; --accent:#20c997; --muted:#9aa6b2; --glass: rgba(255,255,255,0.04);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;color:#e6eef8;background:radial-gradient(1200px 600px at 10% 10%, rgba(32,201,151,0.06), transparent), radial-gradient(800px 400px at 90% 90%, rgba(32,201,151,0.03), transparent), var(--bg);}
+
+    /* 3D rotating stars background */
+    .stars{position:fixed;inset:0;pointer-events:none;overflow:hidden}
+    .star{position:absolute;width:6px;height:6px;background:linear-gradient(135deg,#fff,#a6f4d3);border-radius:50%;filter:blur(.4px);opacity:.9;transform-origin:center}
+
+    .wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:40px}
+    .card{width:360px;max-width:90vw;padding:26px;border-radius:18px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));box-shadow: 0 8px 30px rgba(2,6,23,0.6);backdrop-filter: blur(6px);border:1px solid rgba(255,255,255,0.03);transform-style:preserve-3d;transition:transform 600ms cubic-bezier(.22,.9,.35,1)}
+    .card:hover{transform:translateY(-6px) rotateX(6deg) rotateY(-4deg)}
+
+    header{display:flex;align-items:center;gap:12px}
+    .logo{width:52px;height:52px;border-radius:12px;background:linear-gradient(135deg,var(--accent),#3b82f6);display:flex;align-items:center;justify-content:center;color:#042028;font-weight:700;font-size:22px;box-shadow:0 6px 20px rgba(32,201,151,0.08);}
+    h1{margin:0;font-size:18px}
+    p.lead{margin:6px 0 18px;color:var(--muted);font-size:13px}
+
+    .game-row{display:flex;gap:12px;align-items:center}
+    input[type=number]{-moz-appearance:textfield;appearance:textfield;padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,0.04);background:var(--glass);color:inherit;font-size:18px;outline:none;width:100%;box-shadow: inset 0 -6px 24px rgba(2,6,23,0.25)}
+    input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{ -webkit-appearance: none;margin: 0; }
+
+    button{padding:10px 14px;border-radius:12px;border:0;background:linear-gradient(180deg,var(--accent),#2fbf8d);color:#032;cursor:pointer;font-weight:700;box-shadow:0 6px 18px rgba(47,191,141,0.12);transition:transform .12s ease}
+    button:active{transform:translateY(1px)}
+
+    .hint{margin-top:14px;color:var(--muted);font-size:14px;min-height:22px}
+
+    .status{margin-top:18px;padding:12px;border-radius:12px;background:linear-gradient(90deg, rgba(255,255,255,0.012), rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.02);display:flex;align-items:center;gap:10px}
+    .num-box{width:64px;height:64px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:21px;font-weight:800;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.03)}
+
+    .controls{display:flex;gap:10px;margin-left:auto}
+    .muted{color:var(--muted);font-size:13px}
+
+    /* reveal animation */
+    .reveal{transform-style:preserve-3d;transition:transform .7s cubic-bezier(.2,.9,.3,1)}
+    .flip{transform:rotateX(180deg)}
+
+    /* confetti canvas covers whole screen but pointer-events none */
+    #confetti{position:fixed;left:0;top:0;width:100%;height:100%;pointer-events:none}
+
+    footer{margin-top:14px;color:var(--muted);font-size:12px;text-align:center}
+
+    /* small responsive tweaks */
+    @media (max-width:420px){.card{padding:18px}.logo{width:46px;height:46px}}
+  </style>
+</head>
+<body>
+  <div class="stars" id="stars"></div>
+  <div class="wrap">
+    <main class="card" role="application" aria-label="Number guessing game">
+      <header>
+        <div class="logo">NG</div>
+        <div>
+          <h1>Number Guessing — Animated</h1>
+          <p class="lead">Guess the secret number between <strong id="min">1</strong> and <strong id="max">100</strong>. You have <span id="tries">7</span> tries.</p>
+        </div>
+      </header>
+
+      <section style="margin-top:12px">
+        <div class="game-row">
+          <input id="guessInput" type="number" min="1" max="100" aria-label="Type your guess" placeholder="Enter a number...">
+          <button id="guessBtn">Guess</button>
+        </div>
+
+        <div class="hint" id="hint">Good luck — make your first guess!</div>
+
+        <div class="status reveal" id="status">
+          <div class="num-box" id="lastGuess">?</div>
+          <div class="muted" style="line-height:1.1">
+            <div>Tries left: <strong id="left">7</strong></div>
+            <div>High score: <strong id="best">0</strong></div>
+          </div>
+          <div class="controls">
+            <button id="resetBtn" style="background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted);font-weight:600;padding:8px 10px">Reset</button>
+          </div>
+        </div>
+
+        <footer>Tip: use smaller steps — binary search helps!</footer>
+      </section>
+    </main>
+  </div>
+
+  <canvas id="confetti"></canvas>
+
+  <script>
+    // --- Game settings ---
+    const MIN = 1, MAX = 100, MAX_TRIES = 7;
+    let secret, triesLeft, bestScore = 0;
+
+    // DOM
+    const guessInput = document.getElementById('guessInput');
+    const guessBtn = document.getElementById('guessBtn');
+    const hint = document.getElementById('hint');
+    const lastGuess = document.getElementById('lastGuess');
+    const left = document.getElementById('left');
+    const best = document.getElementById('best');
+    const resetBtn = document.getElementById('resetBtn');
+    const status = document.getElementById('status');
+
+    document.getElementById('min').textContent = MIN;
+    document.getElementById('max').textContent = MAX;
+    document.getElementById('tries').textContent = MAX_TRIES;
+
+    function newGame(){
+      secret = Math.floor(Math.random()*(MAX-MIN+1))+MIN;
+      triesLeft = MAX_TRIES;
+      left.textContent = triesLeft;
+      hint.textContent = 'Good luck — make your first guess!';
+      lastGuess.textContent = '?';
+      status.classList.remove('flip');
+      guessInput.disabled = false; guessBtn.disabled = false;
+      confettiClear();
+    }
+
+    function finish(win){
+      guessInput.disabled = true; guessBtn.disabled = true;
+      if(win){
+        hint.textContent = `Awesome — you guessed it! The number was ${secret}.`;
+        status.classList.add('flip');
+        bestScore = Math.max(bestScore, MAX_TRIES - triesLeft + 1);
+        best.textContent = bestScore;
+        fireConfetti();
+      } else {
+        hint.textContent = `Out of tries — the number was ${secret}. Try again!`;
+        status.classList.remove('flip');
+      }
+    }
+
+    guessBtn.addEventListener('click', onGuess);
+    guessInput.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') onGuess(); });
+    resetBtn.addEventListener('click', newGame);
+
+    function onGuess(){
+      const val = Number(guessInput.value);
+      if(!val || val < MIN || val > MAX){ hint.textContent = `Please enter a number between ${MIN} and ${MAX}.`; return; }
+      lastGuess.textContent = val;
+
+      if(val === secret){
+        finish(true);
+        return;
+      }
+
+      triesLeft--;
+      left.textContent = triesLeft;
+
+      if(val < secret){ hint.textContent = 'Too low — try a higher number.'; pulse('low'); }
+      else { hint.textContent = 'Too high — try a lower number.'; pulse('high'); }
+
+      if(triesLeft <= 0) finish(false);
+    }
+
+    // little pulse animation for feedback
+    function pulse(which){
+      const original = guessInput.style.transform || '';
+      if(which === 'low') guessInput.animate([{transform:'translateY(0px)'},{transform:'translateY(-6px)'}],{duration:220, iterations:1, easing:'ease-out'});
+      else guessInput.animate([{transform:'translateY(0px)'},{transform:'translateY(6px)'}],{duration:220, iterations:1, easing:'ease-out'});
+    }
+
+    // --- Simple confetti implementation ---
+    const canvas = document.getElementById('confetti');
+    const ctx = canvas.getContext('2d');
+    let W, H, confPieces = [], confAnimId = null;
+
+    function resize(){ W = canvas.width = innerWidth; H = canvas.height = innerHeight; }
+    addEventListener('resize', resize);
+    resize();
+
+    function createConfetti(){
+      confPieces = [];
+      for(let i=0;i<90;i++){
+        confPieces.push({x: Math.random()*W, y: Math.random()*H - H, r: 6 + Math.random()*8, d: Math.random()*5+2, vx:(Math.random()-0.5)*4, vy:Math.random()*3+2, color: `hsl(${~~(Math.random()*360)},70%,60%)`, rot: Math.random()*360, vr: (Math.random()-0.5)*8});
+      }
+    }
+
+    function confettiTick(){
+      ctx.clearRect(0,0,W,H);
+      for(const p of confPieces){
+        p.x += p.vx; p.y += p.vy; p.rot += p.vr;
+        ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot*Math.PI/180);
+        ctx.fillStyle = p.color; ctx.fillRect(-p.r/2,-p.r/2,p.r,p.r*0.6);
+        ctx.restore();
+      }
+      confPieces = confPieces.filter(p=>p.y < H+50);
+      if(confPieces.length===0){ cancelAnimationFrame(confAnimId); confAnimId = null; ctx.clearRect(0,0,W,H); }
+      else confAnimId = requestAnimationFrame(confettiTick);
+    }
+
+    function fireConfetti(){ createConfetti(); if(!confAnimId) confAnimId = requestAnimationFrame(confettiTick); }
+    function confettiClear(){ confPieces = []; if(confAnimId) { cancelAnimationFrame(confAnimId); confAnimId = null; ctx.clearRect(0,0,W,H); } }
+
+    // --- pretty dynamic starfield in background ---
+    const starsEl = document.getElementById('stars');
+    for(let i=0;i<28;i++){
+      const s = document.createElement('div'); s.className = 'star';
+      const size = 2+Math.random()*6; s.style.width = size+'px'; s.style.height = size+'px';
+      s.style.left = Math.random()*100+'%'; s.style.top = Math.random()*100+'%';
+      s.style.opacity = 0.5+Math.random()*0.9; s.style.transform = `translateZ(${Math.random()*600-300}px)`;
+      starsEl.appendChild(s);
+    }
+
+    // small tilt on mouse move to create 3d parallax
+    const card = document.querySelector('.card');
+    document.addEventListener('mousemove', (e)=>{
+      const cx = innerWidth/2, cy = innerHeight/2; const dx = (e.clientX - cx)/cx; const dy = (e.clientY - cy)/cy;
+      card.style.transform = `perspective(900px) rotateY(${dx*6}deg) rotateX(${ -dy*6 }deg)`;
+    });
+
+    // seed/load
+    newGame();
+
+    // keyboard accessibility: up/down to nudge number
+    guessInput.addEventListener('wheel', (e)=>{ e.preventDefault(); const step = e.deltaY>0?1:-1; guessInput.value = Math.min(MAX, Math.max(MIN, Number(guessInput.value||0)+step)); });
+
+  </script>
+</body>
+</html>
