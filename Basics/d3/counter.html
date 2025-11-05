@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Counter App</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            /* background-color: black; */
+        }
+        #box {
+            border: 2px solid green;
+            height: 300px;
+            width: 500px;
+            margin: 10px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+        h1 {
+            color: cornflowerblue;
+            font-size: 3em;
+        }
+        p {
+            font-size: 3em;
+            color: chartreuse;
+            margin: 30px;
+        }
+        #btn {
+            display: flex;
+            column-gap: 0.5rem;
+            flex-flow: row-reverse;
+        }
+        button {
+            font-size: 20px;
+            border-radius: 10px;
+            background-color: brown;
+            color: antiquewhite;
+            padding: 10px;
+            cursor: pointer;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="box">
+        <h1>Counter App</h1>
+        <p id="result">0</p>
+        <div id="btn">
+            <button id="b1">Increase</button>
+            <button id="b2">Reset</button>
+            <button id="b3" onclick="Dec()">Decrease</button>
+        </div>
+    </div>
+    <script>
+        let incBtn = document.getElementById('b1');
+        let decBtn = document.getElementById('b3');
+        let reset = document.getElementById('b2');
+        let result = document.getElementById('result');
+
+        let counter = 0;
+
+        reset.addEventListener('click',  () => {
+            counter = 0;
+            result.innerText = 0;
+            console.log(counter);
+            
+        })
+        incBtn.addEventListener('click', () => {
+            counter++;
+            result.innerText = counter.toString();
+            console.log(counter);
+        })
+        function Dec () {
+            counter--;
+            result.innerText = counter.toString();
+            console.log(counter);
+        }
+        
+    </script>
+</body>
+</html>
