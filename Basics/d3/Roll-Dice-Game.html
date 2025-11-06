@@ -1,195 +1,337 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>CSS Grid Dice Roll</title>
-<style>
-  :root{
-    --die-size: 160px;
-    --pip-size: 22px;
-    --bg: #f5f7fa;
-    --die-bg: white;
-    --accent: #172e44; /* your preferred button color from memory */
-    --shadow: 0 10px 30px rgba(23,46,68,0.12);
-  }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSS Dice Roller</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-  body{
-    min-height:100vh;
-    margin:0;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    gap:28px;
-    background:linear-gradient(180deg,var(--bg),#e8eef7);
-    font-family:system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;
-    padding:28px;
-  }
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+        }
 
-  .scene {
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    gap:16px;
-  }
+        .container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
 
-  .die {
-    width:var(--die-size);
-    height:var(--die-size);
-    background:var(--die-bg);
-    border-radius:16px;
-    display:grid;
-    grid-template-columns:repeat(3,1fr);
-    grid-template-rows:repeat(3,1fr);
-    padding:18px;
-    box-sizing:border-box;
-    box-shadow:var(--shadow);
-    transform-style:preserve-3d;
-    transition:transform 700ms cubic-bezier(.2,.9,.3,1), box-shadow 200ms;
-    user-select:none;
-  }
+        h1 {
+            color: white;
+            margin-bottom: 30px;
+            text-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+            font-size: 2.5rem;
+        }
 
-  /* small perspective rotation during roll */
-  .die.rolling {
-    transform: rotateX(720deg) rotateY(540deg) scale(1.02);
-    box-shadow: 0 18px 40px rgba(23,46,68,0.16);
-  }
+        .dice-container {
+            perspective: 1000px;
+            margin: 40px auto;
+            width: 200px;
+            height: 200px;
+        }
 
-  .pip {
-    justify-self:center;
-    align-self:center;
-    width:var(--pip-size);
-    height:var(--pip-size);
-    border-radius:50%;
-    background:var(--accent);
-    transform:scale(1);
-    transition: transform 260ms cubic-bezier(.2,.9,.3,1), opacity 180ms;
-    will-change:transform,opacity;
-    opacity:0;            /* pip is hidden by default */
-    box-shadow: 0 3px 6px rgba(0,0,0,0.12) inset, 0 1px 0 rgba(255,255,255,0.08);
-  }
+        .dice {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 1.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
 
-  /* visible pip */
-  .pip.show {
-    opacity:1;
-    transform:scale(1.05);
-  }
+        .dice.rolling {
+            animation: roll 1.5s ease-out;
+        }
 
-  /* subtle pop when number appears */
-  .die.showing .pip.show {
-    transform:scale(1.18);
-    transition-duration:320ms;
-  }
+        @keyframes roll {
+            0% { transform: rotateX(0) rotateY(0) rotateZ(0); }
+            25% { transform: rotateX(90deg) rotateY(180deg) rotateZ(45deg); }
+            50% { transform: rotateX(180deg) rotateY(360deg) rotateZ(90deg); }
+            75% { transform: rotateX(270deg) rotateY(540deg) rotateZ(135deg); }
+            100% { transform: rotateX(360deg) rotateY(720deg) rotateZ(180deg); }
+        }
 
-  .controls{
-    display:flex;
-    gap:12px;
-    align-items:center;
-  }
+        .face {
+            position: absolute;
+            width: 200px;
+            height: 200px;
+            background: white;
+            border-radius: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.1),
+                        0 5px 15px rgba(0, 0, 0, 0.3);
+            border: 1px solid #eee;
+        }
 
-  button{
-    background:var(--accent);
-    color:white;
-    border:0;
-    padding:10px 16px;
-    font-size:15px;
-    border-radius:10px;
-    cursor:pointer;
-    box-shadow:0 8px 20px rgba(23,46,68,0.12);
-  }
+        .dot {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background: #333;
+            position: absolute;
+            box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.5);
+        }
 
-  button:active{ transform:translateY(1px); }
-  .label{
-    font-size:14px;
-    color:#334a63;
-  }
+        /* Dice face positions */
+        .front { transform: translateZ(100px); }
+        .back { transform: translateZ(-100px) rotateY(180deg); }
+        .right { transform: translateX(100px) rotateY(90deg); }
+        .left { transform: translateX(-100px) rotateY(-90deg); }
+        .top { transform: translateY(-100px) rotateX(90deg); }
+        .bottom { transform: translateY(100px) rotateX(-90deg); }
 
-  /* small responsive sizing */
-  @media (max-width:420px){
-    :root{ --die-size:120px; --pip-size:16px; }
-  }
-</style>
+        /* Dice face dot arrangements */
+        .front .dot:nth-child(1) { top: 30px; left: 30px; }
+        .front .dot:nth-child(2) { top: 30px; right: 30px; }
+        .front .dot:nth-child(3) { bottom: 30px; left: 30px; }
+        .front .dot:nth-child(4) { bottom: 30px; right: 30px; }
+        .front .dot:nth-child(5) { top: 50%; left: 50%; transform: translate(-50%, -50%); }
+
+        .back .dot:nth-child(1) { top: 30px; left: 30px; }
+        .back .dot:nth-child(2) { top: 30px; right: 30px; }
+        .back .dot:nth-child(3) { bottom: 30px; left: 30px; }
+        .back .dot:nth-child(4) { bottom: 30px; right: 30px; }
+        .back .dot:nth-child(5) { top: 50%; left: 50%; transform: translate(-50%, -50%); }
+        .back .dot:nth-child(6) { top: 50%; left: 30px; transform: translateY(-50%); }
+        .back .dot:nth-child(7) { top: 50%; right: 30px; transform: translateY(-50%); }
+
+        .right .dot:nth-child(1) { top: 30px; left: 30px; }
+        .right .dot:nth-child(2) { top: 30px; right: 30px; }
+        .right .dot:nth-child(3) { bottom: 30px; left: 30px; }
+        .right .dot:nth-child(4) { bottom: 30px; right: 30px; }
+
+        .left .dot:nth-child(1) { top: 50%; left: 50%; transform: translate(-50%, -50%); }
+
+        .top .dot:nth-child(1) { top: 30px; left: 30px; }
+        .top .dot:nth-child(2) { top: 30px; right: 30px; }
+        .top .dot:nth-child(3) { bottom: 30px; left: 30px; }
+        .top .dot:nth-child(4) { bottom: 30px; right: 30px; }
+        .top .dot:nth-child(5) { top: 50%; left: 50%; transform: translate(-50%, -50%); }
+        .top .dot:nth-child(6) { top: 50%; left: 30px; transform: translateY(-50%); }
+        .top .dot:nth-child(7) { top: 50%; right: 30px; transform: translateY(-50%); }
+
+        .bottom .dot:nth-child(1) { top: 30px; left: 30px; }
+        .bottom .dot:nth-child(2) { top: 30px; right: 30px; }
+
+        .roll-btn {
+            background: linear-gradient(135deg, #ff9a9e, #fad0c4);
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #333;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+
+        .roll-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .roll-btn:active {
+            transform: translateY(1px);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .result {
+            color: white;
+            font-size: 1.5rem;
+            margin-top: 30px;
+            font-weight: bold;
+            text-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+            min-height: 40px;
+        }
+
+        .history {
+            margin-top: 30px;
+            color: white;
+            font-size: 1.1rem;
+        }
+
+        .history-list {
+            list-style: none;
+            max-height: 150px;
+            overflow-y: auto;
+            margin-top: 10px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        .history-list li {
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
 </head>
 <body>
-  <div class="scene">
-    <div id="die" class="die" role="img" aria-label="Dice showing 1">
-      <!-- 9 pip positions for a 3x3 grid -->
-      <div class="pip" data-pos="0"></div>
-      <div class="pip" data-pos="1"></div>
-      <div class="pip" data-pos="2"></div>
-      <div class="pip" data-pos="3"></div>
-      <div class="pip" data-pos="4"></div>
-      <div class="pip" data-pos="5"></div>
-      <div class="pip" data-pos="6"></div>
-      <div class="pip" data-pos="7"></div>
-      <div class="pip" data-pos="8"></div>
+    <div class="container">
+        <h1>CSS Dice Roller</h1>
+        
+        <div class="dice-container">
+            <div class="dice" id="dice">
+                <!-- Front face (5 dots) -->
+                <div class="face front">
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                </div>
+                
+                <!-- Back face (6 dots) -->
+                <div class="face back">
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                </div>
+                
+                <!-- Right face (4 dots) -->
+                <div class="face right">
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                </div>
+                
+                <!-- Left face (1 dot) -->
+                <div class="face left">
+                    <div class="dot"></div>
+                </div>
+                
+                <!-- Top face (6 dots) -->
+                <div class="face top">
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                </div>
+                
+                <!-- Bottom face (2 dots) -->
+                <div class="face bottom">
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                </div>
+            </div>
+        </div>
+        
+        <button class="roll-btn" id="rollBtn">Roll Dice</button>
+        
+        <div class="result" id="result">Click "Roll Dice" to start!</div>
+        
+        <div class="history">
+            <h3>Roll History</h3>
+            <ul class="history-list" id="historyList"></ul>
+        </div>
     </div>
 
-    <div class="controls" aria-hidden="false">
-      <button id="rollBtn" title="Roll the dice">Roll 🎲</button>
-      <div class="label">Result: <strong id="result">—</strong></div>
-    </div>
-  </div>
-
-<script>
-  // mapping: face number -> pip indices (0..8 left-to-right, top-to-bottom)
-  const faces = {
-    1: [4],
-    2: [0,8],
-    3: [0,4,8],
-    4: [0,2,6,8],
-    5: [0,2,4,6,8],
-    6: [0,2,3,5,6,8]
-  };
-
-  const die = document.getElementById('die');
-  const pips = Array.from(die.querySelectorAll('.pip'));
-  const rollBtn = document.getElementById('rollBtn');
-  const resultEl = document.getElementById('result');
-
-  function showFace(n){
-    // clear
-    pips.forEach(p => p.classList.remove('show'));
-    const indices = faces[n] || faces[1];
-    indices.forEach(i => {
-      const pip = pips[i];
-      if(pip) pip.classList.add('show');
-    });
-    die.setAttribute('aria-label', `Dice showing ${n}`);
-    resultEl.textContent = n;
-    // show container pop for visible transitions
-    die.classList.remove('showing');
-    // allow reflow then add class to trigger pop transitions
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => die.classList.add('showing'));
-    });
-  }
-
-  function rollDice(){
-    // random between 1 and 6
-    const n = Math.floor(Math.random()*6) + 1;
-    // animation class
-    die.classList.add('rolling');
-    rollBtn.disabled = true;
-    // speed of animation; match CSS transition (700ms)
-    setTimeout(() => {
-      die.classList.remove('rolling');
-      showFace(n);
-      rollBtn.disabled = false;
-    }, 700);
-  }
-
-  // allow keyboard space/enter to roll
-  rollBtn.addEventListener('click', rollDice);
-  rollBtn.addEventListener('keydown', e => {
-    if(e.key === 'Enter' || e.key === ' '){
-      e.preventDefault();
-      rollDice();
-    }
-  });
-
-  // show initial face
-  showFace(1);
-</script>
+    <script>
+        const dice = document.getElementById('dice');
+        const rollBtn = document.getElementById('rollBtn');
+        const result = document.getElementById('result');
+        const historyList = document.getElementById('historyList');
+        
+        let rollHistory = [];
+        
+        // Function to generate a random number between 1 and 6
+        function rollDice() {
+            return Math.floor(Math.random() * 6) + 1;
+        }
+        
+        // Function to show a specific face of the dice
+        function showFace(faceNumber) {
+            // Reset any previous transformations
+            dice.style.transform = '';
+            
+            // Apply transformation to show the correct face
+            switch(faceNumber) {
+                case 1:
+                    dice.style.transform = 'rotateX(0deg) rotateY(0deg)';
+                    break;
+                case 2:
+                    dice.style.transform = 'rotateY(-90deg)';
+                    break;
+                case 3:
+                    dice.style.transform = 'rotateX(-90deg)';
+                    break;
+                case 4:
+                    dice.style.transform = 'rotateX(90deg)';
+                    break;
+                case 5:
+                    dice.style.transform = 'rotateY(90deg)';
+                    break;
+                case 6:
+                    dice.style.transform = 'rotateY(180deg)';
+                    break;
+            }
+        }
+        
+        // Roll the dice with animation
+        rollBtn.addEventListener('click', function() {
+            // Add rolling animation
+            dice.classList.add('rolling');
+            result.textContent = 'Rolling...';
+            
+            // Disable button during animation
+            rollBtn.disabled = true;
+            
+            // After animation completes, show the result
+            setTimeout(() => {
+                const rollResult = rollDice();
+                dice.classList.remove('rolling');
+                showFace(rollResult);
+                
+                result.textContent = `You rolled a ${rollResult}!`;
+                
+                // Add to history
+                rollHistory.unshift(rollResult);
+                updateHistory();
+                
+                // Re-enable button
+                rollBtn.disabled = false;
+            }, 1500);
+        });
+        
+        // Update the roll history display
+        function updateHistory() {
+            historyList.innerHTML = '';
+            
+            // Show only the last 10 rolls
+            const recentRolls = rollHistory.slice(0, 10);
+            
+            recentRolls.forEach((roll, index) => {
+                const li = document.createElement('li');
+                li.textContent = `Roll ${index + 1}: ${roll}`;
+                historyList.appendChild(li);
+            });
+        }
+    </script>
 </body>
 </html>

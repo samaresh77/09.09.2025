@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>CSS Grid Dice Roll</title>
+<style>
+  :root{
+    --die-size: 160px;
+    --pip-size: 22px;
+    --bg: #f5f7fa;
+    --die-bg: white;
+    --accent: #172e44; /* your preferred button color from memory */
+    --shadow: 0 10px 30px rgba(23,46,68,0.12);
+  }
+
+  body{
+    min-height:100vh;
+    margin:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:28px;
+    background:linear-gradient(180deg,var(--bg),#e8eef7);
+    font-family:system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;
+    padding:28px;
+  }
+
+  .scene {
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:16px;
+  }
+
+  .die {
+    width:var(--die-size);
+    height:var(--die-size);
+    background:var(--die-bg);
+    border-radius:16px;
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    grid-template-rows:repeat(3,1fr);
+    padding:18px;
+    box-sizing:border-box;
+    box-shadow:var(--shadow);
+    transform-style:preserve-3d;
+    transition:transform 700ms cubic-bezier(.2,.9,.3,1), box-shadow 200ms;
+    user-select:none;
+  }
+
+  /* small perspective rotation during roll */
+  .die.rolling {
+    transform: rotateX(720deg) rotateY(540deg) scale(1.02);
+    box-shadow: 0 18px 40px rgba(23,46,68,0.16);
+  }
+
+  .pip {
+    justify-self:center;
+    align-self:center;
+    width:var(--pip-size);
+    height:var(--pip-size);
+    border-radius:50%;
+    background:var(--accent);
+    transform:scale(1);
+    transition: transform 260ms cubic-bezier(.2,.9,.3,1), opacity 180ms;
+    will-change:transform,opacity;
+    opacity:0;            /* pip is hidden by default */
+    box-shadow: 0 3px 6px rgba(0,0,0,0.12) inset, 0 1px 0 rgba(255,255,255,0.08);
+  }
+
+  /* visible pip */
+  .pip.show {
+    opacity:1;
+    transform:scale(1.05);
+  }
+
+  /* subtle pop when number appears */
+  .die.showing .pip.show {
+    transform:scale(1.18);
+    transition-duration:320ms;
+  }
+
+  .controls{
+    display:flex;
+    gap:12px;
+    align-items:center;
+  }
+
+  button{
+    background:var(--accent);
+    color:white;
+    border:0;
+    padding:10px 16px;
+    font-size:15px;
+    border-radius:10px;
+    cursor:pointer;
+    box-shadow:0 8px 20px rgba(23,46,68,0.12);
+  }
+
+  button:active{ transform:translateY(1px); }
+  .label{
+    font-size:14px;
+    color:#334a63;
+  }
+
+  /* small responsive sizing */
+  @media (max-width:420px){
+    :root{ --die-size:120px; --pip-size:16px; }
+  }
+</style>
+</head>
+<body>
+  <div class="scene">
+    <div id="die" class="die" role="img" aria-label="Dice showing 1">
+      <!-- 9 pip positions for a 3x3 grid -->
+      <div class="pip" data-pos="0"></div>
+      <div class="pip" data-pos="1"></div>
+      <div class="pip" data-pos="2"></div>
+      <div class="pip" data-pos="3"></div>
+      <div class="pip" data-pos="4"></div>
+      <div class="pip" data-pos="5"></div>
+      <div class="pip" data-pos="6"></div>
+      <div class="pip" data-pos="7"></div>
+      <div class="pip" data-pos="8"></div>
+    </div>
+
+    <div class="controls" aria-hidden="false">
+      <button id="rollBtn" title="Roll the dice">Roll 🎲</button>
+      <div class="label">Result: <strong id="result">—</strong></div>
+    </div>
+  </div>
+
+<script>
+  // mapping: face number -> pip indices (0..8 left-to-right, top-to-bottom)
+  const faces = {
+    1: [4],
+    2: [0,8],
+    3: [0,4,8],
+    4: [0,2,6,8],
+    5: [0,2,4,6,8],
+    6: [0,2,3,5,6,8]
+  };
+
+  const die = document.getElementById('die');
+  const pips = Array.from(die.querySelectorAll('.pip'));
+  const rollBtn = document.getElementById('rollBtn');
+  const resultEl = document.getElementById('result');
+
+  function showFace(n){
+    // clear
+    pips.forEach(p => p.classList.remove('show'));
+    const indices = faces[n] || faces[1];
+    indices.forEach(i => {
+      const pip = pips[i];
+      if(pip) pip.classList.add('show');
+    });
+    die.setAttribute('aria-label', `Dice showing ${n}`);
+    resultEl.textContent = n;
+    // show container pop for visible transitions
+    die.classList.remove('showing');
+    // allow reflow then add class to trigger pop transitions
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => die.classList.add('showing'));
+    });
+  }
+
+  function rollDice(){
+    // random between 1 and 6
+    const n = Math.floor(Math.random()*6) + 1;
+    // animation class
+    die.classList.add('rolling');
+    rollBtn.disabled = true;
+    // speed of animation; match CSS transition (700ms)
+    setTimeout(() => {
+      die.classList.remove('rolling');
+      showFace(n);
+      rollBtn.disabled = false;
+    }, 700);
+  }
+
+  // allow keyboard space/enter to roll
+  rollBtn.addEventListener('click', rollDice);
+  rollBtn.addEventListener('keydown', e => {
+    if(e.key === 'Enter' || e.key === ' '){
+      e.preventDefault();
+      rollDice();
+    }
+  });
+
+  // show initial face
+  showFace(1);
+</script>
+</body>
+</html>
