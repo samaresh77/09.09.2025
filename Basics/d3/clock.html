@@ -2,77 +2,260 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Clock</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Digital Clock</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600&display=swap" rel="stylesheet">
 
-        body {
-            background-color: black;
-            color: white;
-        }
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      transition: all 0.4s ease;
+    }
 
-        #clock {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            font-size: 6.5rem;
-        }
+    body {
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Orbitron', sans-serif;
+      overflow: hidden;
+    }
 
-        .box {
-            border: 2px solid white;
-            width: 100%;
-            height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
+    /* 🌙 Night Mode */
+    body.night {
+      background: linear-gradient(-45deg, #0f2027, #203a43, #2c5364);
+      background-size: 400% 400%;
+      animation: gradientBG 12s ease infinite;
+      color: #fff;
+    }
 
-        h1 {
-            position: absolute;
-            top: 20px;
-            font-size: 4rem;
-        }
+    /* ☀️ Day Mode */
+    body.day {
+      background: linear-gradient(135deg, #fdfbfb, #ebedee);
+      background-size: 400% 400%;
+      animation: gradientBG 20s ease infinite;
+      color: #111;
+    }
 
-        @media (max-width: 600px) {
-            #clock {
-                font-size: 2.8rem;
-            }
-            h1 {
-                font-size: 3rem;
-            }
-        }
-    </style>
+    @keyframes gradientBG {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .box {
+      text-align: center;
+      border-radius: 20px;
+      padding: 50px 80px;
+      backdrop-filter: blur(12px);
+      width: 90%;
+      max-width: 650px;
+      animation: fadeIn 2s ease;
+    }
+
+    /* Night box */
+    body.night .box {
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      background: rgba(0, 0, 0, 0.3);
+      box-shadow: 0 0 40px rgba(0, 255, 255, 0.5);
+    }
+
+    /* Day box */
+    body.day .box {
+      border: 2px solid rgba(0, 0, 0, 0.1);
+      background: rgba(255, 255, 255, 0.7);
+      box-shadow: 0 0 30px rgba(255, 204, 0, 0.4);
+    }
+
+    /* Heading always bigger than clock */
+    h1 {
+      font-size: 6rem;
+      margin-bottom: 20px;
+      letter-spacing: 2px;
+    }
+
+    body.night h1 {
+      color: #00ffff;
+      text-shadow: 0 0 20px #00ffff, 0 0 40px #00ffff;
+    }
+
+    body.day h1 {
+      color: #ffb703;
+      text-shadow: 0 0 15px rgba(255, 180, 0, 0.6);
+    }
+
+    /* Clock smaller than heading */
+    #clock {
+      font-size: 4rem;
+      letter-spacing: 3px;
+      animation: pulse 1s infinite alternate;
+    }
+
+    body.night #clock {
+      color: #ffffff;
+      text-shadow: 0 0 20px #00ffff, 0 0 40px #00ffff;
+    }
+
+    body.day #clock {
+      color: #222;
+      text-shadow: 0 0 10px rgba(255, 204, 0, 0.5);
+    }
+
+    #date {
+      margin-top: 20px;
+      font-size: 1.5rem;
+      opacity: 0;
+      animation: fadeInDate 2s ease 1s forwards;
+    }
+
+    body.night #date {
+      color: #aafcff;
+      text-shadow: 0 0 10px #00ffff;
+    }
+
+    body.day #date {
+      color: #555;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      100% { transform: scale(1.03); }
+    }
+
+    @keyframes fadeInDate {
+      from { opacity: 0; transform: translateY(15px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* 🌗 Toggle Switch */
+    .toggle-container {
+      position: absolute;
+      top: 25px;
+      right: 25px;
+      width: 80px;
+      height: 40px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 50px;
+      display: flex;
+      align-items: center;
+      padding: 5px;
+      cursor: pointer;
+      box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+      transition: all 0.4s ease;
+    }
+
+    .toggle-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      transition: all 0.4s ease;
+    }
+
+    body.night .toggle-btn {
+      background-color: #00ffff;
+      color: #000;
+      box-shadow: 0 0 20px #00ffff;
+      transform: translateX(4px);
+    }
+
+    body.day .toggle-btn {
+      background-color: #ffb703;
+      color: #fff;
+      box-shadow: 0 0 20px #ffb703;
+      transform: translateX(38px);
+    }
+
+    /* 📱 Responsive */
+    @media (max-width: 1024px) {
+      h1 { font-size: 5rem; }
+      #clock { font-size: 3.5rem; }
+    }
+
+    @media (max-width: 768px) {
+      .box { padding: 40px 60px; }
+      h1 { font-size: 3.5rem; }
+      #clock { font-size: 2.6rem; }
+      #date { font-size: 1.2rem; }
+      .toggle-container { width: 70px; height: 35px; }
+      .toggle-btn { width: 28px; height: 28px; }
+    }
+
+    @media (max-width: 480px) {
+      .box { padding: 25px 35px; }
+      h1 { font-size: 2.8rem; }
+      #clock { font-size: 2rem; }
+      #date { font-size: 1rem; }
+      .toggle-container { top: 15px; right: 15px; width: 65px; height: 32px; }
+      .toggle-btn { width: 25px; height: 25px; }
+    }
+  </style>
 </head>
 
-<body>
-    <div class="box">
-        <h1>Digital Clock</h1>
-        <div id="clock">00:00:00</div>
-    </div>
-    <script>
+<body class="night">
+  <div class="toggle-container" id="themeToggle">
+    <div class="toggle-btn">🌙</div>
+  </div>
 
-        const updateClock = () => {
-            const now = new Date();
-            let hours = now.getHours();
-            const meridium = hours >= 12 ? 'PM' : 'AM';
-            hours = (hours % 12 || 12).toString().padStart(2,0);
-            const minutes = now.getMinutes().toString().padStart(2,0);
-            const seconds = now.getSeconds().toString().padStart(2,0);
-            const timeString = `${hours}:${minutes}:${seconds} ${meridium}`;
-            // console.log(timeString);
-            document.getElementById('clock').textContent = timeString;
-        }
-        // updateClock();
-        setInterval(updateClock, 1000);
+  <div class="box">
+    <h1>Digital Clock</h1>
+    <div id="clock">00:00:00</div>
+    <div id="date">Loading date...</div>
+  </div>
 
-    </script>
+  <script>
+    const clockEl = document.getElementById('clock');
+    const dateEl = document.getElementById('date');
+    const toggleContainer = document.getElementById('themeToggle');
+    const toggleBtn = toggleContainer.querySelector('.toggle-btn');
+    const body = document.body;
+
+    // 🕐 Update clock and date
+    const updateClock = () => {
+      const now = new Date();
+      let hours = now.getHours();
+      const meridium = hours >= 12 ? 'PM' : 'AM';
+      hours = (hours % 12 || 12).toString().padStart(2, '0');
+      const minutes = now.getMinutes().toString().padStart(2, '0');
+      const seconds = now.getSeconds().toString().padStart(2, '0');
+      const timeString = `${hours}:${minutes}:${seconds} ${meridium}`;
+      clockEl.textContent = timeString;
+
+      const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+      const dateString = now.toLocaleDateString('en-US', options);
+      dateEl.textContent = dateString;
+    };
+
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // 🌗 Theme toggle
+    const setTheme = (theme) => {
+      body.className = theme;
+      localStorage.setItem('theme', theme);
+      toggleBtn.textContent = theme === 'night' ? '🌙' : '☀️';
+    };
+
+    toggleContainer.addEventListener('click', () => {
+      const newTheme = body.classList.contains('night') ? 'day' : 'night';
+      setTheme(newTheme);
+    });
+
+    // 💾 Load saved theme
+    const savedTheme = localStorage.getItem('theme') || 'night';
+    setTheme(savedTheme);
+  </script>
 </body>
 
 </html>
