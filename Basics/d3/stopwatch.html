@@ -1,100 +1,184 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stopwatch</title>
-    <style>
-        body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            font-family: Arial, sans-serif;
-            background-color: #f0f0f0;
-        }
-        #box {
-            text-align: center;
-            padding: 20px;
-            border: 2px solid #333;
-            border-radius: 10px;
-            background-color: #fff;
-        }
-        #stopwatch {
-            font-size: 2em;
-            margin: 20px 0;
-        }
-        button {
-            margin: 5px;
-            padding: 10px 20px;
-            font-size: 1em;
-            border-radius: 10px;
-            background-color: #333;
-            color: #fff;
-            cursor: pointer;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stopwatch</title>
+  <style>
+    /* Global Reset and Layout */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      font-family: "Poppins", Arial, sans-serif;
+      background: linear-gradient(135deg, #172e44, #0a192f);
+      color: #fff;
+    }
+
+    /* Stopwatch Container */
+    #box {
+      text-align: center;
+      padding: 30px 40px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.08);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(8px);
+      transition: transform 0.3s ease;
+    }
+
+    #box:hover {
+      transform: scale(1.03);
+    }
+
+    h1 {
+      font-size: 3rem;
+      margin-bottom: 20px;
+      letter-spacing: 2px;
+      color: #00d4ff;
+      text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+    }
+
+    /* Stopwatch Text */
+    #stopwatch {
+      font-size: 3rem;
+      font-weight: bold;
+      letter-spacing: 2px;
+      margin: 20px 0;
+      color: #ffffff;
+      text-shadow: 0 0 15px rgba(0, 212, 255, 0.4);
+    }
+
+    /* Buttons */
+    button {
+      margin: 10px;
+      padding: 12px 25px;
+      font-size: 1rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 50px;
+      background: #00d4ff;
+      color: #0a192f;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    button:hover {
+      background: #00b2d6;
+      transform: scale(1.05);
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    /* Mobile Responsive */
+    @media (max-width: 600px) {
+      #box {
+        width: 90%;
+        padding: 20px;
+      }
+
+      #stopwatch {
+        font-size: 2rem;
+      }
+
+      button {
+        display: block;
+        width: 50%;
+        margin: 10px 0;
+        padding: 12px 0;
+      }
+      #buttons {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      h1 {
+        font-size: 2.5rem;
+      }
+    }
+  </style>
 </head>
 <body>
-    <div id="box">
-        <h1>Stopwatch</h1>
-        <p id="stopwatch">00:00:00</p>
-        <button id="start">Start</button>
-        <button id="stop">Stop</button>
-        <button id="reset">Reset</button>
+  <div id="box">
+    <h1>Stopwatch</h1>
+    <p id="stopwatch">00:00:00.000</p>
+    <div id="buttons">
+      <button id="start">Start</button>
+      <button id="stop">Stop</button>
+      <button id="reset">Reset</button>
     </div>
-    <script>
-        let stopwatchElement = document.getElementById('stopwatch');
-        let startButton = document.getElementById('start');
-        let stopButton = document.getElementById('stop');
-        let resetButton = document.getElementById('reset');
+  </div>
 
-        let startTime = 0;
-        let elapsedTime = 0;
-        let timerInterval;
+  <script>
+    let stopwatchElement = document.getElementById('stopwatch');
+    let startButton = document.getElementById('start');
+    let stopButton = document.getElementById('stop');
+    let resetButton = document.getElementById('reset');
 
-        function timeToString(time) {
-            let diffInHrs = time / 3600000;
-            let hh = Math.floor(diffInHrs);
+    let startTime = 0;
+    let elapsedTime = 0;
+    let timerInterval;
 
-            let diffInMin = (diffInHrs - hh) * 60;
-            let mm = Math.floor(diffInMin);
+    // Convert time to readable format (HH:MM:SS.ms)
+    function timeToString(time) {
+      let diffInHrs = time / 3600000;
+      let hh = Math.floor(diffInHrs);
 
-            let diffInSec = (diffInMin - mm) * 60;
-            let ss = Math.floor(diffInSec);
+      let diffInMin = (diffInHrs - hh) * 60;
+      let mm = Math.floor(diffInMin);
 
-            let formattedHH = hh.toString().padStart(2, '0');
-            let formattedMM = mm.toString().padStart(2, '0');
-            let formattedSS = ss.toString().padStart(2, '0');
+      let diffInSec = (diffInMin - mm) * 60;
+      let ss = Math.floor(diffInSec);
 
-            return `${formattedHH}:${formattedMM}:${formattedSS}`;
-        }
+      let diffInMs = (diffInSec - ss) * 1000;
+      let ms = Math.floor(diffInMs);
 
-        function print(txt) {
-            stopwatchElement.innerHTML = txt;
-        }
+      let formattedHH = hh.toString().padStart(2, '0');
+      let formattedMM = mm.toString().padStart(2, '0');
+      let formattedSS = ss.toString().padStart(2, '0');
+      let formattedMS = ms.toString().padStart(3, '0');
 
-        function start() {
-            startTime = Date.now() - elapsedTime;
-            timerInterval = setInterval(function printTime() {
-                elapsedTime = Date.now() - startTime;
-                print(timeToString(elapsedTime));
-            }, 1000);
-        }
+      return `${formattedHH}:${formattedMM}:${formattedSS}.${formattedMS}`;
+    }
 
-        function stop() {
-            clearInterval(timerInterval);
-        }
+    function print(txt) {
+      stopwatchElement.innerHTML = txt;
+    }
 
-        function reset() {
-            clearInterval(timerInterval);
-            print("00:00:00");
-            elapsedTime = 0;
-        }
+    function start() {
+      if (!timerInterval) {
+        startTime = Date.now() - elapsedTime;
+        timerInterval = setInterval(function printTime() {
+          elapsedTime = Date.now() - startTime;
+          print(timeToString(elapsedTime));
+        }, 10); // update every 10ms for smooth ms display
+      }
+    }
 
-        startButton.addEventListener('click', start);
-        stopButton.addEventListener('click', stop);
-        resetButton.addEventListener('click', reset);
-    </script>
+    function stop() {
+      clearInterval(timerInterval);
+      timerInterval = null;
+    }
+
+    function reset() {
+      clearInterval(timerInterval);
+      timerInterval = null;
+      print("00:00:00.000");
+      elapsedTime = 0;
+    }
+
+    startButton.addEventListener('click', start);
+    stopButton.addEventListener('click', stop);
+    resetButton.addEventListener('click', reset);
+  </script>
 </body>
 </html>
