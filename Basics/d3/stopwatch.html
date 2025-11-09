@@ -3,9 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Stopwatch</title>
+  <title>Stopwatch with Laps</title>
   <style>
-    /* Global Reset and Layout */
     * {
       box-sizing: border-box;
       margin: 0;
@@ -17,12 +16,11 @@
       justify-content: center;
       align-items: center;
       height: 100vh;
-      font-family: "Poppins", Arial, sans-serif;
       background: linear-gradient(135deg, #172e44, #0a192f);
+      font-family: "Poppins", Arial, sans-serif;
       color: #fff;
     }
 
-    /* Stopwatch Container */
     #box {
       text-align: center;
       padding: 30px 40px;
@@ -30,6 +28,8 @@
       background: rgba(255, 255, 255, 0.08);
       box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
       backdrop-filter: blur(8px);
+      width: 90%;
+      max-width: 420px;
       transition: transform 0.3s ease;
     }
 
@@ -40,24 +40,26 @@
     h1 {
       font-size: 3rem;
       margin-bottom: 20px;
-      letter-spacing: 2px;
       color: #00d4ff;
       text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+      letter-spacing: 2px;
     }
 
-    /* Stopwatch Text */
     #stopwatch {
       font-size: 3rem;
       font-weight: bold;
-      letter-spacing: 2px;
-      margin: 20px 0;
-      color: #ffffff;
-      text-shadow: 0 0 15px rgba(0, 212, 255, 0.4);
+      margin: 15px 0 25px;
+      text-shadow: 0 0 10px rgba(0, 212, 255, 0.4);
     }
 
-    /* Buttons */
+    .btn-group {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
     button {
-      margin: 10px;
+      margin: 8px;
       padding: 12px 25px;
       font-size: 1rem;
       font-weight: 600;
@@ -75,13 +77,67 @@
     }
 
     button:active {
-      transform: scale(0.98);
+      transform: scale(0.97);
     }
 
-    /* Mobile Responsive */
+    #laps {
+      margin-top: 25px;
+      max-height: 180px;
+      overflow-y: auto;
+      padding: 10px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.05);
+      box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.2);
+    }
+
+    #laps p {
+      margin: 5px 0;
+      font-size: 1rem;
+      background: rgba(255, 255, 255, 0.08);
+      padding: 8px;
+      border-radius: 8px;
+      display: flex;
+      justify-content: space-between;
+      animation: fadeIn 0.3s ease;
+    }
+
+    #laps::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    #laps::-webkit-scrollbar-thumb {
+      background: #00b2d6;
+      border-radius: 10px;
+    }
+
+    /* Lap stats */
+    #stats {
+      margin-top: 15px;
+      font-size: 1rem;
+      background: rgba(255, 255, 255, 0.07);
+      padding: 10px;
+      border-radius: 10px;
+      box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.2);
+      display: flex;
+      justify-content: space-between;
+      font-weight: 500;
+      text-align: left;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(5px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
     @media (max-width: 600px) {
       #box {
-        width: 90%;
+        width: 95%;
         padding: 20px;
       }
 
@@ -90,19 +146,18 @@
       }
 
       button {
-        display: block;
-        width: 50%;
-        margin: 10px 0;
-        padding: 12px 0;
-      }
-      #buttons {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
+        flex: 1 1 50%;
+        margin: 6px 0;
       }
 
       h1 {
-        font-size: 2.5rem;
+        font-size: 3rem;
+      }
+
+      #stats {
+        flex-direction: column;
+        gap: 5px;
+        font-size: 0.9rem;
       }
     }
   </style>
@@ -111,24 +166,38 @@
   <div id="box">
     <h1>Stopwatch</h1>
     <p id="stopwatch">00:00:00.000</p>
-    <div id="buttons">
+
+    <div class="btn-group">
       <button id="start">Start</button>
       <button id="stop">Stop</button>
       <button id="reset">Reset</button>
+      <button id="lap">Lap</button>
+    </div>
+
+    <div id="laps"></div>
+
+    <div id="stats">
+      <span id="bestLap">🏁 Best Lap: --</span>
+      <span id="avgLap">📊 Average: --</span>
     </div>
   </div>
 
   <script>
-    let stopwatchElement = document.getElementById('stopwatch');
-    let startButton = document.getElementById('start');
-    let stopButton = document.getElementById('stop');
-    let resetButton = document.getElementById('reset');
+    const stopwatchElement = document.getElementById('stopwatch');
+    const startButton = document.getElementById('start');
+    const stopButton = document.getElementById('stop');
+    const resetButton = document.getElementById('reset');
+    const lapButton = document.getElementById('lap');
+    const lapsContainer = document.getElementById('laps');
+    const bestLapElement = document.getElementById('bestLap');
+    const avgLapElement = document.getElementById('avgLap');
 
     let startTime = 0;
     let elapsedTime = 0;
     let timerInterval;
+    let lapCount = 0;
+    let laps = [];
 
-    // Convert time to readable format (HH:MM:SS.ms)
     function timeToString(time) {
       let diffInHrs = time / 3600000;
       let hh = Math.floor(diffInHrs);
@@ -157,10 +226,10 @@
     function start() {
       if (!timerInterval) {
         startTime = Date.now() - elapsedTime;
-        timerInterval = setInterval(function printTime() {
+        timerInterval = setInterval(() => {
           elapsedTime = Date.now() - startTime;
           print(timeToString(elapsedTime));
-        }, 10); // update every 10ms for smooth ms display
+        }, 10);
       }
     }
 
@@ -172,13 +241,38 @@
     function reset() {
       clearInterval(timerInterval);
       timerInterval = null;
-      print("00:00:00.000");
       elapsedTime = 0;
+      lapCount = 0;
+      laps = [];
+      print("00:00:00.000");
+      lapsContainer.innerHTML = "";
+      bestLapElement.textContent = "🏁 Best Lap: --";
+      avgLapElement.textContent = "📊 Average: --";
+    }
+
+    function recordLap() {
+      if (elapsedTime === 0) return;
+      lapCount++;
+      const lapTime = elapsedTime;
+      laps.push(lapTime);
+      const lapElement = document.createElement("p");
+      lapElement.innerHTML = `<span>Lap ${lapCount}</span><span>${timeToString(lapTime)}</span>`;
+      lapsContainer.prepend(lapElement);
+      updateStats();
+    }
+
+    function updateStats() {
+      if (laps.length === 0) return;
+      const bestLap = Math.min(...laps);
+      const avgLap = laps.reduce((a, b) => a + b, 0) / laps.length;
+      bestLapElement.textContent = `🏁 Best Lap: ${timeToString(bestLap)}`;
+      avgLapElement.textContent = `📊 Average: ${timeToString(avgLap)}`;
     }
 
     startButton.addEventListener('click', start);
     stopButton.addEventListener('click', stop);
     resetButton.addEventListener('click', reset);
+    lapButton.addEventListener('click', recordLap);
   </script>
 </body>
 </html>
