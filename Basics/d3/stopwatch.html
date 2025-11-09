@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stopwatch</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+        }
+        #box {
+            text-align: center;
+            padding: 20px;
+            border: 2px solid #333;
+            border-radius: 10px;
+            background-color: #fff;
+        }
+        #stopwatch {
+            font-size: 2em;
+            margin: 20px 0;
+        }
+        button {
+            margin: 5px;
+            padding: 10px 20px;
+            font-size: 1em;
+            border-radius: 10px;
+            background-color: #333;
+            color: #fff;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div id="box">
+        <h1>Stopwatch</h1>
+        <p id="stopwatch">00:00:00</p>
+        <button id="start">Start</button>
+        <button id="stop">Stop</button>
+        <button id="reset">Reset</button>
+    </div>
+    <script>
+        let stopwatchElement = document.getElementById('stopwatch');
+        let startButton = document.getElementById('start');
+        let stopButton = document.getElementById('stop');
+        let resetButton = document.getElementById('reset');
+
+        let startTime = 0;
+        let elapsedTime = 0;
+        let timerInterval;
+
+        function timeToString(time) {
+            let diffInHrs = time / 3600000;
+            let hh = Math.floor(diffInHrs);
+
+            let diffInMin = (diffInHrs - hh) * 60;
+            let mm = Math.floor(diffInMin);
+
+            let diffInSec = (diffInMin - mm) * 60;
+            let ss = Math.floor(diffInSec);
+
+            let formattedHH = hh.toString().padStart(2, '0');
+            let formattedMM = mm.toString().padStart(2, '0');
+            let formattedSS = ss.toString().padStart(2, '0');
+
+            return `${formattedHH}:${formattedMM}:${formattedSS}`;
+        }
+
+        function print(txt) {
+            stopwatchElement.innerHTML = txt;
+        }
+
+        function start() {
+            startTime = Date.now() - elapsedTime;
+            timerInterval = setInterval(function printTime() {
+                elapsedTime = Date.now() - startTime;
+                print(timeToString(elapsedTime));
+            }, 1000);
+        }
+
+        function stop() {
+            clearInterval(timerInterval);
+        }
+
+        function reset() {
+            clearInterval(timerInterval);
+            print("00:00:00");
+            elapsedTime = 0;
+        }
+
+        startButton.addEventListener('click', start);
+        stopButton.addEventListener('click', stop);
+        resetButton.addEventListener('click', reset);
+    </script>
+</body>
+</html>
