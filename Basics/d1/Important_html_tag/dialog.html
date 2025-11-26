@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dialog</title>
+</head>
+<body>
+    <!-- dialog tag is used to define a dialog box or window. -->
+    <dialog>
+        This is a dialog box.
+    </dialog>
+    <button onclick="dialog.close()">Close Dialog</button>
+    <button onclick="dialog.show()">Open Dialog</button>
+
+    <script>
+        const dialog = document.querySelector('dialog');
+        dialog.show(); // To show the dialog
+        dialog.close(); // To close the dialog
+    </script>
+</body>
+</html>
