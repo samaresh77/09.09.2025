@@ -1,0 +1,6 @@
+fastapi
+uvicorn
+gtts
+SpeechRecognition
+pydantic
+python-multipart
