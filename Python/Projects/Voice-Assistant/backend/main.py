@@ -1,3 +1,6 @@
+from dotenv import load_dotenv
+load_dotenv()
+
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -8,6 +11,8 @@ import subprocess
 from assistant.stt import speech_to_text
 from assistant.brain import process_command
 from assistant.tts import text_to_speech
+# from assistant.chatgpt_brain import chatgpt_reply
+from assistant.gemini_brain import gemini_reply
 
 app = FastAPI(title="Voice Assistant API")
 
@@ -56,7 +61,9 @@ async def voice_assistant(audio: UploadFile = File(...)):
     if not text:
         response_text = "Sorry, I could not understand what you said. Please try again."
     else:
-        response_text = process_command(text)
+        # response_text = process_command(text) # hard coded brain
+        #response_text = chatgpt_reply(text) # chatgpt brain added
+        response_text = gemini_reply(text) # gemini brain added
 
     # 4️⃣ Text to speech
     text_to_speech(response_text, output_path)
